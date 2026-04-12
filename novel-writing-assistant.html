@@ -1,0 +1,4371 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Novel Writing Assistant</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #333;
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .editor-section {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 20px;
+        }
+        .main-editor {
+            display: flex;
+            flex-direction: column;
+        }
+        .editor-toolbar {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+            flex-wrap: wrap;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            background: #667eea;
+            color: white;
+            height: 40px;
+            min-width: 80px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .btn:hover {
+            background: #5a67d8;
+        }
+        .btn-green {
+            background: #48bb78;
+        }
+        .btn-green:hover {
+            background: #38a169;
+        }
+        .btn-orange {
+            background: #ed8936;
+        }
+        .btn-orange:hover {
+            background: #dd6b20;
+        }
+        .btn-red {
+            background: #e53e3e;
+        }
+        .btn-red:hover {
+            background: #c53030;
+        }
+        .editor {
+            width: 100%;
+            height: 65vh;
+            min-height: 400px;
+            padding: 20px;
+            border: 2px solid #e2e8f0;
+            border-radius: 8px;
+            font-size: 16px;
+            line-height: 1.6;
+            font-family: Georgia, serif;
+            overflow-y: auto;
+            outline: none;
+            box-sizing: border-box;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+        .editor:empty:before {
+            content: attr(data-placeholder);
+            color: #a0aec0;
+            pointer-events: none;
+        }
+        .editor:focus {
+            border-color: #667eea;
+        }
+        .formatting-toolbar {
+            display: flex;
+            gap: 4px;
+            flex-wrap: wrap;
+            align-items: center;
+            padding: 8px 10px;
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 8px;
+        }
+        .fmt-btn {
+            padding: 4px 10px;
+            border: 1px solid #cbd5e0;
+            border-radius: 5px;
+            background: white;
+            cursor: pointer;
+            font-size: 0.9rem;
+            color: #2d3748;
+            font-family: Georgia, serif;
+            min-width: 32px;
+            text-align: center;
+            line-height: 1.4;
+            transition: background 0.15s, border-color 0.15s;
+        }
+        .fmt-btn:hover {
+            background: #e2e8f0;
+            border-color: #a0aec0;
+        }
+        .fmt-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        .fmt-separator {
+            width: 1px;
+            height: 24px;
+            background: #cbd5e0;
+            margin: 0 4px;
+        }
+        .fmt-select {
+            padding: 4px 8px;
+            border: 1px solid #cbd5e0;
+            border-radius: 5px;
+            background: white;
+            font-size: 0.85rem;
+            color: #2d3748;
+            cursor: pointer;
+        }
+        body.dark-mode .formatting-toolbar {
+            background: #1f2937;
+            border-color: #4a5568;
+        }
+        body.dark-mode .fmt-btn {
+            background: #2d3748;
+            border-color: #4a5568;
+            color: #e2e8f0;
+        }
+        body.dark-mode .fmt-btn:hover {
+            background: #4a5568;
+        }
+        body.dark-mode .fmt-btn.active {
+            background: #667eea;
+            color: white;
+        }
+        body.dark-mode .fmt-separator { background: #4a5568; }
+        body.dark-mode .fmt-select {
+            background: #2d3748;
+            border-color: #4a5568;
+            color: #e2e8f0;
+        }
+        .insights-section {
+            margin-top: 25px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+        .insight-panel {
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        .insight-panel h3 {
+            margin-top: 0;
+            color: #2d3748;
+        }
+        .insight-form {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 12px;
+        }
+        .insight-form input,
+        .insight-form textarea,
+        .insight-form select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #cbd5f5;
+            border-radius: 6px;
+            font-size: 0.95rem;
+            font-family: inherit;
+        }
+        .insight-form textarea {
+            min-height: 70px;
+            resize: vertical;
+        }
+        .insight-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .insight-empty {
+            color: #718096;
+            font-style: italic;
+            margin: 0;
+        }
+        .scene-card,
+        .character-card {
+            background: #fff;
+            border-radius: 8px;
+            padding: 12px;
+            border-left: 4px solid #667eea;
+            box-shadow: 0 3px 8px rgba(102, 126, 234, 0.08);
+        }
+        .scene-card header,
+        .character-card header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .link-btn {
+            background: none;
+            border: none;
+            color: #805ad5;
+            cursor: pointer;
+            font-size: 0.85rem;
+            padding: 0;
+        }
+        .link-btn:hover {
+            text-decoration: underline;
+        }
+        .heatmap-chip {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #1a202c;
+            margin-bottom: 6px;
+        }
+        .heatmap-chip.progress { background: #c6f6d5; }
+        .heatmap-chip.regress { background: #fed7d7; }
+        .heatmap-chip.static { background: #e2e8f0; }
+        .health-score-panel {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+            border: none !important;
+            color: white !important;
+        }
+        .health-score-panel * {
+            color: white;
+        }
+        .health-score-panel h3 {
+            color: white;
+            margin-top: 0;
+        }
+        .health-score-display {
+            text-align: center;
+            margin: 15px 0;
+        }
+        .health-score-number {
+            font-size: 3.5rem;
+            font-weight: bold;
+            line-height: 1;
+            margin: 10px 0;
+        }
+        .health-score-label {
+            font-size: 0.9rem;
+            opacity: 1;
+            margin-top: 5px;
+        }
+        .health-score-breakdown {
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 8px;
+            padding: 12px;
+            margin-top: 15px;
+        }
+        .health-score-breakdown h4 {
+            margin: 0 0 10px;
+            font-size: 0.95rem;
+            color: white;
+            font-weight: 600;
+        }
+        .health-metric {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: white;
+        }
+        .health-metric:last-child {
+            margin-bottom: 0;
+        }
+        .health-metric-label {
+            color: white;
+            opacity: 1;
+            font-weight: 500;
+        }
+        .health-metric-value {
+            font-weight: 700;
+            color: white;
+        }
+        .health-recommendations {
+            margin-top: 15px;
+            padding-top: 15px;
+            border-top: 2px solid rgba(255, 255, 255, 0.4);
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 6px;
+            padding: 15px;
+        }
+        .health-recommendations h4 {
+            margin: 0 0 8px;
+            font-size: 0.95rem;
+            color: white;
+            font-weight: 600;
+        }
+                .health-recommendation {
+            color: white !important;
+            font-size: 0.85rem;
+            color: white;
+            opacity: 1;
+            margin-bottom: 8px;
+            padding-left: 12px;
+            position: relative;
+            line-height: 1.4;
+        }
+        .health-recommendation:before {
+            content: "•";
+            position: absolute;
+            left: 0;
+        }
+        .health-recommendation:last-child {
+            margin-bottom: 0;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .panel {
+            background: #f7fafc;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+        }
+        .panel h3 {
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .stat-item {
+            text-align: center;
+            padding: 10px;
+            background: white;
+            border-radius: 6px;
+        }
+        .stat-value {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #667eea;
+        }
+        .analysis-item {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #667eea;
+        }
+        .analysis-item h4 {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin: 0 0 8px;
+        }
+        .analysis-icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #edf2f7;
+            font-size: 16px;
+        }
+        .analysis-item.suggestion { border-left-color: #48bb78; background: #f0fff4; }
+        .analysis-item.warning { border-left-color: #ed8936; background: #fffaf0; }
+        .analysis-item.error { border-left-color: #e53e3e; background: #fed7d7; }
+        .direction-cards {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .direction-card {
+            background: #ffffff;
+            border-radius: 8px;
+            border-left: 4px solid #805ad5;
+            padding: 12px 14px;
+            box-shadow: 0 6px 14px rgba(102, 126, 234, 0.1);
+        }
+        .direction-card h4 {
+            margin: 0 0 6px;
+            color: #4a5568;
+        }
+        .direction-card p {
+            margin: 0 0 6px;
+            color: #2d3748;
+        }
+        .direction-card small {
+            color: #718096;
+        }
+        .direction-actions {
+            display: flex;
+            justify-content: flex-end;
+            margin-top: 8px;
+        }
+        .direction-toggle {
+            margin-top: 10px;
+            display: flex;
+            justify-content: center;
+        }
+        .direction-note {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        .direction-note header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .chat-section {
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .chat-message {
+            background: white;
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+        }
+        .chat-input {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .chat-input input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+        }
+        .example-box {
+            background: #f0f4ff;
+            border: 1px solid #667eea;
+            border-radius: 6px;
+            padding: 10px;
+            margin: 8px 0;
+            font-style: italic;
+        }
+        .chapter-selector {
+            margin-bottom: 10px;
+        }
+        .chapter-selector select {
+            width: 100%;
+            padding: 8px;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+        }
+        .recovery-panel {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+        }
+        .recovery-panel h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+        .export-dropdown {
+            position: relative;
+            display: inline-block;
+        }
+        .export-dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 200px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .export-dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            cursor: pointer;
+        }
+        .export-dropdown-content a:hover {
+            background-color: #f1f1f1;
+        }
+        .export-dropdown:hover .export-dropdown-content {
+            display: block;
+        }
+        .btn-small {
+            padding: 6px 10px;
+            height: 32px;
+            min-width: unset;
+            font-size: 0.85rem;
+        }
+        .btn-outline {
+            background: transparent;
+            border: 1px solid #cbd5f5;
+            color: #4a5568;
+        }
+        .btn-outline:hover {
+            background: #edf2f7;
+        }
+        .chapter-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 260px;
+            overflow-y: auto;
+        }
+        .chapter-item {
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+            background: #fff;
+        }
+        .chapter-item.active {
+            border-color: #667eea;
+            box-shadow: 0 0 0 2px rgba(102, 126, 234, 0.15);
+        }
+        .chapter-item header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+        .chapter-meta {
+            font-size: 0.8rem;
+            color: #718096;
+            margin: 6px 0;
+        }
+        .chapter-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .search-results {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            max-height: 220px;
+            overflow-y: auto;
+        }
+        .search-result {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+            cursor: pointer;
+        }
+        .search-result:hover {
+            border-color: #667eea;
+        }
+        .search-result small {
+            color: #718096;
+        }
+        .backup-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .chat-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .focus-mode .sidebar {
+            display: none;
+        }
+        .focus-mode .editor-section {
+            grid-template-columns: 1fr;
+        }
+        .dark-mode body,
+        body.dark-mode {
+            background: #1a202c;
+        }
+        body.dark-mode .container {
+            background: #2d3748;
+            color: #e2e8f0;
+        }
+        body.dark-mode .panel,
+        body.dark-mode .insight-panel,
+        body.dark-mode .analysis-item,
+        body.dark-mode .chapter-item,
+        body.dark-mode .search-result,
+        body.dark-mode .stat-item {
+            background: #1f2937;
+            border-color: #4a5568;
+            color: #e2e8f0;
+        }
+        body.dark-mode .editor {
+            background: #111827;
+            color: #e5e7eb;
+            border-color: #4a5568;
+        }
+        body.dark-mode .btn-outline {
+            border-color: #718096;
+            color: #e2e8f0;
+        }
+        body.dark-mode .btn-outline:hover {
+            background: #2d3748;
+        }
+        body.dark-mode .analysis-icon {
+            background: #2d3748;
+        }
+        body.dark-mode .chat-message {
+            background: #1f2937;
+            color: #e2e8f0;
+        }
+        body.dark-mode .chat-input input,
+        body.dark-mode .insight-form input,
+        body.dark-mode .insight-form textarea,
+        body.dark-mode .insight-form select,
+        body.dark-mode #genreSelect,
+        body.dark-mode #chapterSelect {
+            background: #1f2937;
+            color: #e2e8f0;
+            border-color: #4a5568;
+        }
+        body.dark-mode .direction-card {
+            background: #1f2937;
+            border-left-color: #805ad5;
+            color: #e2e8f0;
+        }
+        body.dark-mode .direction-card h4 { color: #cbd5e0; }
+        body.dark-mode .direction-card p { color: #e2e8f0; }
+        body.dark-mode .direction-card small { color: #a0aec0; }
+        body.dark-mode .direction-note {
+            background: #1f2937;
+            border-color: #4a5568;
+            color: #e2e8f0;
+        }
+        body.dark-mode .recovery-panel {
+            background: #44337a;
+            border-color: #6b46c1;
+            color: #e2e8f0;
+        }
+        body.dark-mode .recovery-panel h4 { color: #d6bcfa; }
+        body.dark-mode .scene-card,
+        body.dark-mode .character-card {
+            background: #1f2937;
+            color: #e2e8f0;
+        }
+        body.dark-mode .export-dropdown-content {
+            background: #2d3748;
+        }
+        body.dark-mode .export-dropdown-content a {
+            color: #e2e8f0;
+        }
+        body.dark-mode .export-dropdown-content a:hover {
+            background: #4a5568;
+        }
+        body.dark-mode .chapter-meta { color: #a0aec0; }
+        body.dark-mode .insight-empty { color: #a0aec0; }
+        body.dark-mode .header h1 { color: #e2e8f0; }
+        body.dark-mode .header p { color: #cbd5e0; }
+        body.dark-mode .panel h3 { color: #e2e8f0; }
+        body.dark-mode .insight-panel h3 { color: #e2e8f0; }
+        body.dark-mode .analysis-item.suggestion { background: #1a332a; border-left-color: #48bb78; }
+        body.dark-mode .analysis-item.warning { background: #332a1a; border-left-color: #ed8936; }
+        body.dark-mode .analysis-item.error { background: #331a1a; border-left-color: #e53e3e; }
+        body.dark-mode .heatmap-chip.progress { background: #276749; color: #c6f6d5; }
+        body.dark-mode .heatmap-chip.regress { background: #742a2a; color: #fed7d7; }
+        body.dark-mode .heatmap-chip.static { background: #4a5568; color: #e2e8f0; }
+
+        .goal-bar-container {
+            margin-top: 10px;
+        }
+        .goal-bar-track {
+            width: 100%;
+            height: 12px;
+            background: #e2e8f0;
+            border-radius: 999px;
+            overflow: hidden;
+        }
+        .goal-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #48bb78);
+            border-radius: 999px;
+            transition: width 0.4s ease;
+        }
+        .goal-bar-label {
+            font-size: 0.8rem;
+            color: #718096;
+            text-align: center;
+            margin-top: 4px;
+        }
+        body.dark-mode .goal-bar-track { background: #4a5568; }
+        body.dark-mode .goal-bar-label { color: #a0aec0; }
+
+        .session-timer {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #667eea;
+            padding: 8px 0;
+        }
+        body.dark-mode .session-timer { color: #a3bffa; }
+
+        .find-replace-bar {
+            display: none;
+            gap: 8px;
+            align-items: center;
+            padding: 10px;
+            background: #f7fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            flex-wrap: wrap;
+        }
+        .find-replace-bar.visible { display: flex; }
+        .find-replace-bar input {
+            padding: 6px 10px;
+            border: 1px solid #cbd5f5;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            flex: 1;
+            min-width: 120px;
+        }
+        .find-replace-bar .match-count {
+            font-size: 0.8rem;
+            color: #718096;
+            white-space: nowrap;
+        }
+        body.dark-mode .find-replace-bar {
+            background: #1f2937;
+            border-color: #4a5568;
+        }
+        body.dark-mode .find-replace-bar input {
+            background: #111827;
+            color: #e2e8f0;
+            border-color: #4a5568;
+        }
+
+        .notes-editor {
+            width: 100%;
+            min-height: 120px;
+            padding: 10px;
+            border: 1px solid #cbd5f5;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            resize: vertical;
+        }
+        body.dark-mode .notes-editor {
+            background: #111827;
+            color: #e2e8f0;
+            border-color: #4a5568;
+        }
+
+        .roster-item {
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 10px;
+        }
+        .roster-item header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .roster-item .roster-role {
+            font-size: 0.8rem;
+            color: #805ad5;
+            font-weight: 600;
+        }
+        .roster-item .roster-desc {
+            font-size: 0.85rem;
+            color: #4a5568;
+            margin-top: 4px;
+        }
+        body.dark-mode .roster-item {
+            background: #1f2937;
+            border-color: #4a5568;
+            color: #e2e8f0;
+        }
+        body.dark-mode .roster-item .roster-role { color: #b794f4; }
+        body.dark-mode .roster-item .roster-desc { color: #a0aec0; }
+
+        .book-stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+        .book-stat-item {
+            text-align: center;
+            padding: 8px;
+            background: white;
+            border-radius: 6px;
+        }
+        .book-stat-value {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #805ad5;
+        }
+        .book-stat-label {
+            font-size: 0.75rem;
+            color: #718096;
+        }
+        body.dark-mode .book-stat-item {
+            background: #1f2937;
+        }
+        body.dark-mode .book-stat-value { color: #b794f4; }
+        body.dark-mode .book-stat-label { color: #a0aec0; }
+
+        .autosave-indicator {
+            font-size: 0.75rem;
+            color: #48bb78;
+            text-align: right;
+            min-height: 16px;
+            margin-top: 4px;
+        }
+        body.dark-mode .autosave-indicator { color: #68d391; }
+
+        /* ── Revision Mode ─────────────────────────────────────────── */
+        .btn-revision-active {
+            background: #ed8936 !important;
+            color: white !important;
+            border-color: #dd6b20 !important;
+        }
+        .editor.revision-mode-active {
+            border-left: 4px solid #ed8936;
+        }
+
+        /* Floating tag toolbar */
+        .revision-tag-toolbar {
+            position: fixed;
+            display: none;
+            gap: 4px;
+            background: #fff;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 5px 8px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            z-index: 9999;
+            align-items: center;
+        }
+        .revision-tag-toolbar.visible { display: flex; }
+        .rev-tag-btn {
+            padding: 3px 10px;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 0.8rem;
+            font-weight: 600;
+            line-height: 1.4;
+        }
+        .rev-tag-btn.draft   { background: rgba(160,160,160,0.25); color: #4a5568; }
+        .rev-tag-btn.revised { background: rgba(66,153,225,0.2);   color: #2b6cb0; }
+        .rev-tag-btn.final   { background: rgba(72,187,120,0.2);   color: #276749; }
+        .rev-tag-btn:hover { filter: brightness(0.9); }
+        body.dark-mode .revision-tag-toolbar {
+            background: #2d3748;
+            border-color: #4a5568;
+        }
+        body.dark-mode .rev-tag-btn.draft   { color: #a0aec0; }
+        body.dark-mode .rev-tag-btn.revised { color: #90cdf4; }
+        body.dark-mode .rev-tag-btn.final   { color: #9ae6b4; }
+
+        /* Inline span tags */
+        .revision-draft   { background: rgba(160,160,160,0.18); border-radius: 2px; }
+        .revision-revised { background: rgba(66,153,225,0.18);  border-radius: 2px; }
+        .revision-final   { background: rgba(72,187,120,0.18);  border-radius: 2px; }
+        body.dark-mode .revision-draft   { background: rgba(160,160,160,0.25); }
+        body.dark-mode .revision-revised { background: rgba(66,153,225,0.25);  }
+        body.dark-mode .revision-final   { background: rgba(72,187,120,0.25);  }
+
+        /* Revision Summary panel */
+        .revision-summary-panel { display: none; }
+        .revision-summary-panel.visible { display: block; }
+        .rev-stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 0.88rem;
+            margin-bottom: 6px;
+        }
+        .rev-stat-label { color: #4a5568; font-weight: 500; }
+        .rev-stat-value { font-weight: 700; color: #2d3748; }
+        .rev-bar-track {
+            width: 100%;
+            height: 8px;
+            background: #e2e8f0;
+            border-radius: 999px;
+            overflow: hidden;
+            margin-top: 10px;
+        }
+        .rev-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #48bb78, #38a169);
+            border-radius: 999px;
+            transition: width 0.4s ease;
+        }
+        .rev-bar-label {
+            font-size: 0.78rem;
+            color: #718096;
+            text-align: center;
+            margin-top: 3px;
+        }
+        body.dark-mode .rev-stat-label { color: #a0aec0; }
+        body.dark-mode .rev-stat-value { color: #e2e8f0; }
+        body.dark-mode .rev-bar-track  { background: #4a5568; }
+        body.dark-mode .rev-bar-label  { color: #a0aec0; }
+        /* ───────────────────────────────────────────────────────────── */
+
+        .api-key-section {
+            margin-bottom: 12px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e2e8f0;
+        }
+        .api-key-row {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .api-key-row input[type="password"] {
+            flex: 1;
+            padding: 6px 10px;
+            border: 1px solid #cbd5f5;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            font-family: monospace;
+            height: 32px;
+            box-sizing: border-box;
+        }
+        .api-key-status {
+            font-size: 0.78rem;
+            margin: 4px 0 0;
+        }
+        body.dark-mode .api-key-section {
+            border-bottom-color: #4a5568;
+        }
+        body.dark-mode .api-key-row input[type="password"] {
+            background: #111827;
+            color: #e2e8f0;
+            border-color: #4a5568;
+        }
+
+        .kbd-hint {
+            font-size: 0.7rem;
+            color: #a0aec0;
+            margin-left: 4px;
+        }
+
+        .book-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .book-bar-title {
+            font-size: 1.3rem;
+            font-weight: 700;
+            color: white;
+            flex: 1;
+            min-width: 150px;
+        }
+        .book-bar select {
+            padding: 6px 12px;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.15);
+            color: white;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+        }
+        .book-bar select option {
+            background: #2d3748;
+            color: #e2e8f0;
+        }
+        .book-bar .btn {
+            height: 34px;
+            min-width: unset;
+            padding: 6px 14px;
+            font-size: 0.85rem;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .book-bar .btn:hover {
+            background: rgba(255,255,255,0.35);
+        }
+
+        .storage-warning {
+            background: #fed7d7;
+            color: #742a2a;
+            border: 1px solid #fc8181;
+            border-radius: 8px;
+            padding: 10px 14px;
+            margin-bottom: 12px;
+            font-size: 0.9rem;
+            display: none;
+        }
+        .storage-warning.visible { display: block; }
+        body.dark-mode .storage-warning {
+            background: #742a2a;
+            color: #fed7d7;
+            border-color: #e53e3e;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Novel Writing Assistant</h1>
+            <p>AI-powered editor with plot analysis and character development tools</p>
+        </div>
+
+        <div class="book-bar">
+            <div class="book-bar-title" id="activeBookTitle">No book selected</div>
+            <select id="bookSwitcher" onchange="switchBookFromBar()"></select>
+            <button class="btn" onclick="createBook()">New Book</button>
+            <button class="btn" onclick="renameCurrentBook()">Rename</button>
+        </div>
+
+        <div id="storageWarning" class="storage-warning">
+            Storage is nearly full. Export your workspace to a JSON file to avoid losing data, then clear old backups.
+            <button class="btn btn-small btn-red" onclick="clearOldBackups()" style="margin-left:8px">Clear Old Backups</button>
+        </div>
+        
+        <div class="editor-section">
+            <div class="main-editor">
+                <div class="editor-toolbar">
+                    <div class="chapter-selector">
+                        <select id="chapterSelect" onchange="handleChapterAction()">
+                            <option value="new">Create New Chapter</option>
+                            <option value="recover">Recover Old Work</option>
+                        </select>
+                    </div>
+                    <button class="btn" onclick="saveChapter()">Save</button>
+                    <button class="btn" onclick="analyzeChapter()">Analyze</button>
+                    <button class="btn btn-orange" onclick="generateChapterDirections()">Direction Ideas</button>
+                    <div class="export-dropdown">
+                        <button class="btn">Export</button>
+                        <div class="export-dropdown-content">
+                            <a onclick="exportCurrentChapter()">Export Current Chapter</a>
+                            <a onclick="exportAllChapters()">Export All Chapters</a>
+                        </div>
+                    </div>
+                    <button class="btn btn-green" onclick="updateStats()">Refresh Stats</button>
+                    <button class="btn btn-outline" onclick="toggleFocusMode()">Focus</button>
+                    <button class="btn btn-outline" onclick="toggleDarkMode()">Dark</button>
+                    <button class="btn btn-outline" id="revisionModeBtn" onclick="toggleRevisionMode()">Revision</button>
+                    <button class="btn btn-outline" onclick="toggleFindReplace()">Find<span class="kbd-hint">Ctrl+H</span></button>
+                    <select id="genreSelect" style="padding: 8px; border: 1px solid #e2e8f0; border-radius: 6px;">
+                        <option value="general">General Fiction</option>
+                        <option value="romance">Romance</option>
+                        <option value="mystery">Mystery</option>
+                        <option value="fantasy">Fantasy</option>
+                        <option value="scifi">Science Fiction</option>
+                        <option value="thriller">Thriller</option>
+                        <option value="horror">Horror</option>
+                        <option value="historical">Historical Fiction</option>
+                        <option value="literary">Literary Fiction</option>
+                    </select>
+                </div>
+                
+                <div id="recoveryPanel" class="recovery-panel" style="display: none;">
+                    <h4>Recovery Results</h4>
+                    <div id="recoveryResults"></div>
+                </div>
+
+                <div id="findReplaceBar" class="find-replace-bar">
+                    <input type="text" id="findInput" placeholder="Find..." oninput="findInEditor()">
+                    <input type="text" id="replaceInput" placeholder="Replace with...">
+                    <span class="match-count" id="matchCount"></span>
+                    <button class="btn btn-small" onclick="findNext()">Next</button>
+                    <button class="btn btn-small" onclick="findPrev()">Prev</button>
+                    <button class="btn btn-small btn-orange" onclick="replaceOne()">Replace</button>
+                    <button class="btn btn-small btn-red" onclick="replaceAll()">All</button>
+                    <button class="btn btn-small btn-outline" onclick="toggleFindReplace()">Close</button>
+                </div>
+                
+                <div class="formatting-toolbar" id="formattingToolbar">
+                    <select class="fmt-select" id="blockFormatSelect" onchange="applyBlockFormat(this.value)">
+                        <option value="p">Paragraph</option>
+                        <option value="h1">Heading 1</option>
+                        <option value="h2">Heading 2</option>
+                        <option value="h3">Heading 3</option>
+                        <option value="blockquote">Blockquote</option>
+                    </select>
+                    <div class="fmt-separator"></div>
+                    <button class="fmt-btn" id="btnBold" onclick="execFmt('bold')" title="Bold (Ctrl+B)"><strong>B</strong></button>
+                    <button class="fmt-btn" id="btnItalic" onclick="execFmt('italic')" title="Italic (Ctrl+I)"><em>I</em></button>
+                    <button class="fmt-btn" id="btnUnderline" onclick="execFmt('underline')" title="Underline (Ctrl+U)"><u>U</u></button>
+                    <button class="fmt-btn" id="btnStrike" onclick="execFmt('strikeThrough')" title="Strikethrough"><s>S</s></button>
+                    <div class="fmt-separator"></div>
+                    <button class="fmt-btn" onclick="execFmt('insertUnorderedList')" title="Bullet List">• List</button>
+                    <button class="fmt-btn" onclick="execFmt('insertOrderedList')" title="Numbered List">1. List</button>
+                    <div class="fmt-separator"></div>
+                    <button class="fmt-btn" onclick="execFmt('justifyLeft')" title="Align Left">⬛L</button>
+                    <button class="fmt-btn" onclick="execFmt('justifyCenter')" title="Center">⬛C</button>
+                    <button class="fmt-btn" onclick="execFmt('justifyRight')" title="Align Right">⬛R</button>
+                    <div class="fmt-separator"></div>
+                    <button class="fmt-btn" onclick="execFmt('removeFormat')" title="Clear Formatting" style="font-size:0.75rem">Clear Fmt</button>
+                </div>
+
+                <div 
+                    id="editor" 
+                    class="editor" 
+                    contenteditable="true"
+                    data-placeholder="Start writing your chapter here..."
+                    spellcheck="true"
+                ></div>
+                <div id="autosaveIndicator" class="autosave-indicator"></div>
+
+                <div class="insights-section">
+                    <div class="insight-panel">
+                        <h3>Scene Trajectory Tracker</h3>
+                        <div class="insight-form">
+                            <input type="text" id="sceneGoalInput" placeholder="Scene goal / intention">
+                            <input type="text" id="sceneObstacleInput" placeholder="Primary obstacle or conflict">
+                            <input type="text" id="sceneOutcomeInput" placeholder="Outcome / shift at the end">
+                            <button class="btn btn-green" type="button" onclick="addSceneBeat()">Add Scene Beat</button>
+                        </div>
+                        <div id="sceneTrackerList" class="insight-list">
+                            <p class="insight-empty">No scene beats yet. Capture the goal/obstacle/outcome to keep this chapter moving.</p>
+                        </div>
+                    </div>
+                    
+                    <div class="insight-panel">
+                        <h3>Character Arc Heatmap</h3>
+                        <div class="insight-form">
+                            <input type="text" id="characterNameInput" placeholder="Character name">
+                            <select id="characterStateInput">
+                                <option value="progress">Progress toward need</option>
+                                <option value="regress">Regression / setback</option>
+                                <option value="static">Holding pattern</option>
+                            </select>
+                            <textarea id="characterNotesInput" placeholder="Notes on what changed for this character"></textarea>
+                            <button class="btn btn-green" type="button" onclick="addCharacterBeat()">Add Character Beat</button>
+                        </div>
+                        <div id="characterHeatmapList" class="insight-list">
+                            <p class="insight-empty">Track how each POV character is evolving scene by scene.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="sidebar">
+                <div class="panel health-score-panel">
+                    <h3>Chapter Health Score</h3>
+                    <div id="healthScoreDisplay" class="health-score-display">
+                        <div class="health-score-number">--</div>
+                        <div class="health-score-label">Calculating...</div>
+                    </div>
+                    <div id="healthScoreBreakdown" class="health-score-breakdown" style="display: none;">
+                        <h4>Score Breakdown</h4>
+                        <div id="healthMetrics"></div>
+                    </div>
+                    <div id="healthRecommendations" class="health-recommendations" style="display: none;">
+                        <h4>Recommendations</h4>
+                        <div id="healthRecsList"></div>
+                    </div>
+                </div>
+                <div class="panel">
+                    <h3>Writing Stats</h3>
+                    <div class="session-timer">
+                        <span id="sessionTimer">00:00:00</span>
+                    </div>
+                    <div class="stats-grid">
+                        <div class="stat-item">
+                            <div class="stat-value" id="wordCount">0</div>
+                            <div>Words</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="charCount">0</div>
+                            <div>Characters</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="paragraphCount">0</div>
+                            <div>Paragraphs</div>
+                        </div>
+                        <div class="stat-item">
+                            <div class="stat-value" id="readingTime">0</div>
+                            <div>Min Read</div>
+                        </div>
+                    </div>
+                    <div class="goal-bar-container">
+                        <div style="display:flex;gap:6px;align-items:center;margin-bottom:6px;">
+                            <input type="number" id="wordGoalInput" placeholder="Word goal" min="0" style="width:90px;padding:4px 8px;border:1px solid #cbd5f5;border-radius:6px;font-size:0.85rem;">
+                            <button class="btn btn-small btn-green" onclick="setWordGoal()">Set</button>
+                            <button class="btn btn-small btn-outline" onclick="clearWordGoal()">Clear</button>
+                        </div>
+                        <div class="goal-bar-track">
+                            <div class="goal-bar-fill" id="goalBarFill" style="width:0%"></div>
+                        </div>
+                        <div class="goal-bar-label" id="goalBarLabel">No goal set</div>
+                    </div>
+                </div>
+
+                <div class="panel revision-summary-panel" id="revisionSummaryPanel">
+                    <h3>Revision Summary</h3>
+                    <div class="rev-stat-row">
+                        <span class="rev-stat-label">Tagged words</span>
+                        <span class="rev-stat-value" id="revTotalWords">0</span>
+                    </div>
+                    <div class="rev-stat-row">
+                        <span class="rev-stat-label" style="color:#718096">Draft</span>
+                        <span class="rev-stat-value" id="revDraftWords" style="color:#718096">0</span>
+                    </div>
+                    <div class="rev-stat-row">
+                        <span class="rev-stat-label" style="color:#2b6cb0">Revised</span>
+                        <span class="rev-stat-value" id="revRevisedWords" style="color:#2b6cb0">0</span>
+                    </div>
+                    <div class="rev-stat-row">
+                        <span class="rev-stat-label" style="color:#276749">Final</span>
+                        <span class="rev-stat-value" id="revFinalWords" style="color:#276749">0</span>
+                    </div>
+                    <div class="rev-bar-track">
+                        <div class="rev-bar-fill" id="revBarFill" style="width:0%"></div>
+                    </div>
+                    <div class="rev-bar-label" id="revBarLabel">0% marked Final</div>
+                    <button class="btn btn-small btn-red" style="margin-top:12px;width:100%" onclick="clearRevisionTags()">Clear All Tags</button>
+                </div>
+
+                <div class="panel">
+                    <h3>Book Stats</h3>
+                    <div id="bookStatsGrid" class="book-stats-grid">
+                        <div class="book-stat-item"><div class="book-stat-value" id="bookTotalWords">0</div><div class="book-stat-label">Total Words</div></div>
+                        <div class="book-stat-item"><div class="book-stat-value" id="bookChapterCount">0</div><div class="book-stat-label">Chapters</div></div>
+                        <div class="book-stat-item"><div class="book-stat-value" id="bookAvgChapter">0</div><div class="book-stat-label">Avg/Chapter</div></div>
+                        <div class="book-stat-item"><div class="book-stat-value" id="bookReadTime">0</div><div class="book-stat-label">Min Read</div></div>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Book Library</h3>
+                    <div class="backup-actions" style="margin-bottom: 10px;">
+                        <button class="btn btn-green btn-small" onclick="createBook()">New Book</button>
+                    </div>
+                    <div id="bookList" class="chapter-list">
+                        <p class="insight-empty">No books yet.</p>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Chapter Manager</h3>
+                    <div id="chapterList" class="chapter-list">
+                        <p class="insight-empty">No chapters yet.</p>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Search</h3>
+                    <div class="insight-form">
+                        <input type="text" id="searchInput" placeholder="Search current book..." oninput="handleSearchInput()">
+                        <label style="font-size:0.8rem;color:#718096;display:flex;align-items:center;gap:4px;">
+                            <input type="checkbox" id="crossBookSearch" onchange="handleSearchInput()"> Search all books
+                        </label>
+                    </div>
+                    <div id="searchResults" class="search-results">
+                        <p class="insight-empty">Type to search your chapters.</p>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Book Notes</h3>
+                    <textarea id="bookNotesEditor" class="notes-editor" placeholder="World-building, timeline, lore, ideas..." oninput="saveBookNotes()"></textarea>
+                </div>
+
+                <div class="panel">
+                    <h3>Character Roster</h3>
+                    <div class="insight-form">
+                        <input type="text" id="rosterNameInput" placeholder="Character name">
+                        <input type="text" id="rosterRoleInput" placeholder="Role (e.g. Protagonist, Mentor)">
+                        <textarea id="rosterDescInput" placeholder="Brief description..." style="min-height:50px"></textarea>
+                        <button class="btn btn-green btn-small" onclick="addRosterCharacter()">Add Character</button>
+                    </div>
+                    <div id="rosterList" class="insight-list">
+                        <p class="insight-empty">No characters in roster yet.</p>
+                    </div>
+                </div>
+
+                <div class="panel">
+                    <h3>Backup & Restore</h3>
+                    <div class="backup-actions">
+                        <button class="btn btn-green btn-small" onclick="exportWorkspace()">Export Workspace</button>
+                        <button class="btn btn-small" onclick="triggerImport('merge')">Import (Merge)</button>
+                        <button class="btn btn-red btn-small" onclick="triggerImport('replace')">Import (Replace)</button>
+                        <button class="btn btn-orange btn-small" onclick="restoreLastWorkspaceBackup()">Restore Last Backup</button>
+                    </div>
+                    <input type="file" id="workspaceImportInput" accept="application/json" style="display: none" onchange="handleWorkspaceImport(event)">
+                    <p class="insight-empty" id="backupStatus">Last backup: --</p>
+                </div>
+                
+                <div class="panel">
+                    <h3>AI Analysis</h3>
+                    <div id="analysisResults">
+                        <div class="analysis-item">
+                            <h4>Welcome!</h4>
+                            <p>Start writing to get AI-powered analysis of your chapter.</p>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="panel" id="directionPanel">
+                    <h3>Chapter Direction Ideas</h3>
+                    <div id="directionResults">
+                        <p>Click <strong>Direction Ideas</strong> above to generate multiple next-step options for your chapter.</p>
+                    </div>
+                </div>
+
+                <div class="panel" id="directionNotesPanel">
+                    <h3>Chosen Directions</h3>
+                    <div id="directionNotesList">
+                        <p class="insight-empty">No saved direction ideas yet.</p>
+                    </div>
+                </div>
+                
+                <div class="panel">
+                    <h3>AI Assistant</h3>
+                    <div class="api-key-section">
+                        <div class="api-key-row">
+                            <input type="password" id="apiKeyInput" placeholder="Anthropic API key (sk-ant-...)">
+                            <button class="btn btn-small btn-green" onclick="saveApiKey()">Save</button>
+                            <button class="btn btn-small btn-outline" onclick="clearApiKey()">Clear</button>
+                        </div>
+                        <p class="api-key-status insight-empty" id="apiKeyStatus">Add your Anthropic API key above to enable AI responses.</p>
+                    </div>
+                    <div class="chat-section" id="chatSection">
+                        <div class="chat-message">
+                            <strong>AI:</strong> Hi! I'm here to help with your novel. Ask me about setting descriptions, character development, plot structure, dialogue, or any writing technique!
+                        </div>
+                    </div>
+                    <div class="chat-actions">
+                        <button class="btn btn-small" onclick="aiQuickAction('summary')">Summarize</button>
+                        <button class="btn btn-small" onclick="aiQuickAction('style')">Style Check</button>
+                        <button class="btn btn-small" onclick="aiQuickAction('repeat')">Find Repetition</button>
+                        <button class="btn btn-small" onclick="aiQuickAction('next')">Next Beat</button>
+                        <button class="btn btn-small" onclick="aiQuickAction('consistency')">Consistency</button>
+                    </div>
+                    <div class="chat-input">
+                        <input type="text" id="chatInput" placeholder="Ask me about your story..." onkeypress="handleChatKeypress(event)">
+                        <button class="btn" onclick="sendChatMessage()">Send</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating revision tag toolbar (appended to body so it sits above everything) -->
+    <div class="revision-tag-toolbar" id="revisionTagToolbar">
+        <span style="font-size:0.75rem;color:#718096;margin-right:2px">Tag:</span>
+        <button class="rev-tag-btn draft"   onclick="applyRevisionTag('draft')">Draft</button>
+        <button class="rev-tag-btn revised" onclick="applyRevisionTag('revised')">Revised</button>
+        <button class="rev-tag-btn final"   onclick="applyRevisionTag('final')">Final</button>
+    </div>
+
+    <script>
+        // Global variables
+        let legacyChapters = JSON.parse(localStorage.getItem('novelChapters') || '[]');
+        let books = JSON.parse(localStorage.getItem('novelBooks') || '[]');
+        let currentBookId = localStorage.getItem('currentBookId') || null;
+        let chapters = [];
+        let currentChapter = null;
+        let currentChapterId = null;
+        let currentGenre = 'general';
+        let sceneTrackerData = JSON.parse(localStorage.getItem('sceneTrackerData') || '{}');
+        let characterHeatmapData = JSON.parse(localStorage.getItem('characterHeatmapData') || '{}');
+        let chapterSnapshots = JSON.parse(localStorage.getItem('chapterSnapshots') || '{}');
+        let workspaceBackups = JSON.parse(localStorage.getItem('workspaceBackups') || '[]');
+        let appSettings = JSON.parse(localStorage.getItem('novelSettings') || '{}');
+        const BACKUP_LIMIT = 5;
+        const SNAPSHOT_LIMIT = 5;
+        let importMode = 'merge';
+        let directionNotes = JSON.parse(localStorage.getItem('directionNotes') || '[]');
+        let currentDirectionSuggestions = [];
+        let showAllDirections = false;
+        let bookNotes = JSON.parse(localStorage.getItem('bookNotes') || '{}');
+        let characterRoster = JSON.parse(localStorage.getItem('characterRoster') || '{}');
+        let sessionStartTime = Date.now();
+        let sessionTimerInterval = null;
+        let autosaveInterval = null;
+        let lastAutosaveContent = '';
+        let findMatchPositions = [];
+        let findMatchIndex = -1;
+        let revisionModeActive = false;
+
+        // ── Rich-text editor helpers ──────────────────────────────────────────
+        function getEditor() { return document.getElementById('editor'); }
+
+        function getEditorHTML() {
+            const ed = getEditor();
+            return ed ? ed.innerHTML : '';
+        }
+
+        function getEditorText() {
+            const ed = getEditor();
+            if (!ed) return '';
+            return ed.innerText || ed.textContent || '';
+        }
+
+        function setEditorHTML(html) {
+            const ed = getEditor();
+            if (ed) ed.innerHTML = html || '';
+        }
+
+        function stripHtml(html) {
+            const tmp = document.createElement('div');
+            tmp.innerHTML = html;
+            return tmp.innerText || tmp.textContent || '';
+        }
+
+        // Formatting commands
+        function execFmt(command, value) {
+            document.execCommand(command, false, value || null);
+            getEditor().focus();
+            updateFormatButtons();
+            updateStats();
+        }
+
+        function applyBlockFormat(tag) {
+            if (!tag) return;
+            document.execCommand('formatBlock', false, tag);
+            getEditor().focus();
+            updateStats();
+            document.getElementById('blockFormatSelect').value = 'p';
+        }
+
+        function updateFormatButtons() {
+            const cmds = ['bold','italic','underline','strikeThrough'];
+            const ids  = ['btnBold','btnItalic','btnUnderline','btnStrike'];
+            cmds.forEach((cmd, i) => {
+                const btn = document.getElementById(ids[i]);
+                if (btn) btn.classList.toggle('active', document.queryCommandState(cmd));
+            });
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
+        function generateId() {
+            return 'ch_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+        }
+
+        function safePut(key, value) {
+            try {
+                localStorage.setItem(key, value);
+                return true;
+            } catch (e) {
+                console.warn('localStorage write failed for key: ' + key, e);
+                trimStorageAndRetry(key, value);
+                return false;
+            }
+        }
+
+        function trimStorageAndRetry(key, value) {
+            if (workspaceBackups.length > 1) {
+                workspaceBackups = workspaceBackups.slice(0, 1);
+                localStorage.setItem('workspaceBackups', JSON.stringify(workspaceBackups));
+            }
+            Object.keys(chapterSnapshots).forEach(k => {
+                if (chapterSnapshots[k] && chapterSnapshots[k].length > 2) {
+                    chapterSnapshots[k] = chapterSnapshots[k].slice(0, 2);
+                }
+            });
+            localStorage.setItem('chapterSnapshots', JSON.stringify(chapterSnapshots));
+            try {
+                localStorage.setItem(key, value);
+            } catch (e2) {
+                showStorageWarning();
+            }
+        }
+
+        function showStorageWarning() {
+            const el = document.getElementById('storageWarning');
+            if (el) el.classList.add('visible');
+        }
+
+        function hideStorageWarning() {
+            const el = document.getElementById('storageWarning');
+            if (el) el.classList.remove('visible');
+        }
+
+        function clearOldBackups() {
+            workspaceBackups = [];
+            localStorage.setItem('workspaceBackups', JSON.stringify(workspaceBackups));
+            Object.keys(chapterSnapshots).forEach(k => {
+                if (chapterSnapshots[k] && chapterSnapshots[k].length > 1) {
+                    chapterSnapshots[k] = chapterSnapshots[k].slice(0, 1);
+                }
+            });
+            localStorage.setItem('chapterSnapshots', JSON.stringify(chapterSnapshots));
+            updateBackupStatus();
+            hideStorageWarning();
+            alert('Old backups cleared. Storage freed.');
+        }
+
+        function getStorageUsage() {
+            let total = 0;
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                total += (localStorage.getItem(key) || '').length;
+            }
+            return total;
+        }
+
+        function checkStorageHealth() {
+            const usage = getStorageUsage();
+            const limit = 4.5 * 1024 * 1024;
+            if (usage > limit) {
+                showStorageWarning();
+            } else {
+                hideStorageWarning();
+            }
+        }
+
+        function saveBooks() {
+            safePut('novelBooks', JSON.stringify(books));
+        }
+
+        function saveChapters() {
+            const book = getCurrentBook();
+            if (book) {
+                book.chapters = chapters;
+            }
+            saveBooks();
+        }
+
+        function saveSettings() {
+            localStorage.setItem('novelSettings', JSON.stringify(appSettings));
+        }
+
+        function normalizeChapters(list) {
+            let changed = false;
+            const normalizedList = list.map((chapter) => {
+                const normalized = { ...chapter };
+                if (!normalized.id) {
+                    normalized.id = generateId();
+                    changed = true;
+                }
+                if (!normalized.createdAt) {
+                    normalized.createdAt = new Date().toISOString();
+                    changed = true;
+                }
+                if (!normalized.updatedAt) {
+                    normalized.updatedAt = normalized.createdAt;
+                    changed = true;
+                }
+                if (!normalized.wordCount && normalized.content) {
+                    normalized.wordCount = normalized.content.split(/\s+/).length;
+                    changed = true;
+                }
+                return normalized;
+            });
+            return { list: normalizedList, changed };
+        }
+
+        function normalizeBooks() {
+            let changed = false;
+            books = books.map((book) => {
+                const normalized = { ...book };
+                if (!normalized.id) {
+                    normalized.id = generateId();
+                    changed = true;
+                }
+                if (!normalized.title) {
+                    normalized.title = 'Untitled Book';
+                    changed = true;
+                }
+                const chapterResult = normalizeChapters(normalized.chapters || []);
+                normalized.chapters = chapterResult.list;
+                if (chapterResult.changed) changed = true;
+                return normalized;
+            });
+            if (changed) saveBooks();
+        }
+
+        function ensureBooks() {
+            if (!books.length) {
+                if (legacyChapters.length) {
+                    books = [{
+                        id: generateId(),
+                        title: 'Book 1',
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                        chapters: legacyChapters
+                    }];
+                } else {
+                    books = [{
+                        id: generateId(),
+                        title: 'Book 1',
+                        createdAt: new Date().toISOString(),
+                        updatedAt: new Date().toISOString(),
+                        chapters: []
+                    }];
+                }
+                saveBooks();
+            }
+            normalizeBooks();
+            if (!currentBookId || !books.find(book => book.id === currentBookId)) {
+                currentBookId = books[0].id;
+                localStorage.setItem('currentBookId', currentBookId);
+            }
+            setCurrentBook(currentBookId);
+        }
+
+        function getCurrentBook() {
+            return books.find(book => book.id === currentBookId) || null;
+        }
+
+        function setCurrentBook(bookId) {
+            const book = books.find(b => b.id === bookId);
+            if (!book) return;
+            currentBookId = bookId;
+            localStorage.setItem('currentBookId', currentBookId);
+            chapters = book.chapters || [];
+            currentChapter = null;
+            currentChapterId = null;
+            setEditorHTML('');
+            loadChapters();
+            updateStats();
+            updateBookStats();
+            refreshInsightPanels();
+            renderDirectionNotes();
+            renderBookList();
+            renderBookBar();
+            loadBookNotes();
+            renderRoster();
+        }
+
+        function renderBookBar() {
+            const titleEl = document.getElementById('activeBookTitle');
+            const switcher = document.getElementById('bookSwitcher');
+            const book = getCurrentBook();
+            if (titleEl) {
+                titleEl.textContent = book ? book.title : 'No book selected';
+            }
+            if (switcher) {
+                switcher.innerHTML = books.map(b =>
+                    '<option value="' + b.id + '"' + (b.id === currentBookId ? ' selected' : '') + '>' + escapeHtml(b.title || 'Untitled') + '</option>'
+                ).join('');
+            }
+        }
+
+        function switchBookFromBar() {
+            const switcher = document.getElementById('bookSwitcher');
+            if (switcher && switcher.value) {
+                setCurrentBook(switcher.value);
+            }
+        }
+
+        function renameCurrentBook() {
+            if (!currentBookId) return;
+            renameBook(currentBookId);
+            renderBookBar();
+        }
+
+        function buildWorkspacePayload() {
+            return {
+                version: 2,
+                exportedAt: new Date().toISOString(),
+                books,
+                currentBookId,
+                sceneTrackerData,
+                characterHeatmapData,
+                chapterSnapshots,
+                appSettings,
+                directionNotes,
+                bookNotes,
+                characterRoster
+            };
+        }
+
+        function createWorkspaceBackup(reason = 'manual') {
+            if (reason === 'autosave') {
+                const lastBackup = workspaceBackups.length > 0 ? workspaceBackups[0] : null;
+                if (lastBackup) {
+                    const elapsed = Date.now() - new Date(lastBackup.exportedAt).getTime();
+                    if (elapsed < 300000) return;
+                }
+            }
+            const payload = buildWorkspacePayload();
+            payload.reason = reason;
+            workspaceBackups.unshift(payload);
+            workspaceBackups = workspaceBackups.slice(0, BACKUP_LIMIT);
+            safePut('workspaceBackups', JSON.stringify(workspaceBackups));
+            updateBackupStatus();
+            checkStorageHealth();
+        }
+
+        function updateBackupStatus() {
+            const status = document.getElementById('backupStatus');
+            if (!status) return;
+            if (workspaceBackups.length === 0) {
+                status.textContent = 'Last backup: --';
+                return;
+            }
+            const last = workspaceBackups[0];
+            status.textContent = 'Last backup: ' + new Date(last.exportedAt).toLocaleString() + ' (' + last.reason + ')';
+        }
+
+        function createChapterSnapshot(chapter) {
+            if (!chapter || !chapter.id) return;
+            const key = chapter.id;
+            if (!chapterSnapshots[key]) chapterSnapshots[key] = [];
+            chapterSnapshots[key].unshift({
+                timestamp: new Date().toISOString(),
+                title: chapter.title,
+                content: chapter.content,
+                wordCount: chapter.wordCount,
+                genre: chapter.genre
+            });
+            chapterSnapshots[key] = chapterSnapshots[key].slice(0, SNAPSHOT_LIMIT);
+            safePut('chapterSnapshots', JSON.stringify(chapterSnapshots));
+        }
+
+        function buildChapterKey(bookId, chapterIdOrIndex) {
+            return `book-${bookId}-chapter-${chapterIdOrIndex}`;
+        }
+
+        function migrateInsightsToBookAndIds(book) {
+            if (!book || !book.id) return;
+            const bookId = book.id;
+            (book.chapters || []).forEach((chapter, index) => {
+                const legacyIndexKey = `chapter-${index}`;
+                const legacyIdKey = `chapter-${chapter.id}`;
+                const newKey = buildChapterKey(bookId, chapter.id || index);
+                migrateInsights(legacyIndexKey, newKey);
+                migrateInsights(legacyIdKey, newKey);
+            });
+        }
+
+        function migrateDraftKeys() {
+            if (!currentBookId) return;
+            const draftKey = `draft-${currentBookId}`;
+            if (sceneTrackerData.draft && !sceneTrackerData[draftKey]) {
+                sceneTrackerData[draftKey] = sceneTrackerData.draft;
+                delete sceneTrackerData.draft;
+                saveSceneTracker();
+            }
+            if (characterHeatmapData.draft && !characterHeatmapData[draftKey]) {
+                characterHeatmapData[draftKey] = characterHeatmapData.draft;
+                delete characterHeatmapData.draft;
+                saveCharacterHeatmap();
+            }
+        }
+
+        // Handle chapter dropdown actions
+        function handleChapterAction() {
+            const select = document.getElementById('chapterSelect');
+            const value = select.value;
+            
+            if (value === 'new') {
+                createNewChapter();
+            } else if (value === 'recover') {
+                recoverOldWork();
+            } else {
+                // Load existing chapter
+                loadChapter();
+            }
+        }
+
+        // Create new chapter
+        function createNewChapter() {
+            setEditorHTML('');
+            currentChapter = null;
+            currentChapterId = null;
+            const genreSelect = document.getElementById('genreSelect');
+            if (genreSelect) {
+                genreSelect.value = appSettings.lastGenre || 'general';
+                currentGenre = genreSelect.value;
+            }
+            updateStats();
+            document.getElementById('chapterSelect').value = 'new';
+            refreshInsightPanels();
+        }
+
+        // Recovery function to find old work
+        function recoverOldWork() {
+            console.log('Recovery function called!');
+            
+            const recoveryPanel = document.getElementById('recoveryPanel');
+            const recoveryResults = document.getElementById('recoveryResults');
+            
+            if (!recoveryPanel || !recoveryResults) {
+                alert('Recovery elements not found!');
+                return;
+            }
+            
+            recoveryPanel.style.display = 'block';
+            recoveryResults.innerHTML = '<p>Searching for old work...</p>';
+            
+            // Check for old localStorage keys
+            const oldKeys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key && (key.includes('novel') || key.includes('chapter') || key.includes('writing') || key.includes('editor'))) {
+                    oldKeys.push(key);
+                }
+            }
+            
+            let recoveryHtml = '<h5>Found in localStorage:</h5>';
+            if (oldKeys.length > 0) {
+                recoveryHtml += '<ul>';
+                oldKeys.forEach(key => {
+                    const value = localStorage.getItem(key);
+                    recoveryHtml += '<li><strong>' + key + ':</strong> ' + value.substring(0, 100) + '...</li>';
+                });
+                recoveryHtml += '</ul>';
+            } else {
+                recoveryHtml += '<p>No old keys found in localStorage.</p>';
+            }
+            
+            // Check for any text in the current editor
+            const currentText = getEditorText();
+            if (currentText.trim()) {
+                recoveryHtml += '<h5>Current editor content:</h5><p>' + currentText.substring(0, 200) + '...</p>';
+            } else {
+                recoveryHtml += '<h5>Current editor is empty.</h5>';
+            }
+            
+            // Check for any saved chapters
+            if (chapters.length > 0) {
+                recoveryHtml += '<h5>Saved chapters found:</h5><ul>';
+                chapters.forEach((chapter, index) => {
+                    recoveryHtml += '<li><strong>' + chapter.title + ':</strong> ' + chapter.content.substring(0, 100) + '...</li>';
+                });
+                recoveryHtml += '</ul>';
+            } else {
+                recoveryHtml += '<h5>No saved chapters found in current system.</h5>';
+            }
+            
+            // Show all localStorage keys for debugging
+            recoveryHtml += '<h5>All localStorage keys (for debugging):</h5><ul>';
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                recoveryHtml += '<li>' + key + '</li>';
+            }
+            recoveryHtml += '</ul>';
+            
+            recoveryResults.innerHTML = recoveryHtml;
+            console.log('Recovery completed!');
+            
+            // Reset dropdown to new chapter
+            document.getElementById('chapterSelect').value = 'new';
+        }
+
+        // Update stats function
+        function updateStats() {
+            const editor = document.getElementById('editor');
+            if (!editor) return;
+
+            const content = getEditorText();
+            const words = content.trim() ? content.trim().split(/\s+/).length : 0;
+            const chars = content.length;
+            const paragraphs = content.split('\n').filter(p => p.trim()).length;
+            const readingTime = Math.ceil(words / 200);
+            
+            document.getElementById('wordCount').textContent = words;
+            document.getElementById('charCount').textContent = chars;
+            document.getElementById('paragraphCount').textContent = paragraphs;
+            document.getElementById('readingTime').textContent = readingTime;
+            renderHealthScore();
+            updateGoalBar();
+            updateBookStats();
+            updateRevisionSummary();
+        }
+
+        // Load chapters into dropdown
+        function loadChapters() {
+            const select = document.getElementById('chapterSelect');
+            select.innerHTML = '<option value="new">Create New Chapter</option><option value="recover">Recover Old Work</option>';
+            
+            chapters.forEach((chapter, index) => {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = chapter.title;
+                select.appendChild(option);
+            });
+            renderChapterList();
+        }
+
+        // Load a specific chapter
+        function loadChapter() {
+            const select = document.getElementById('chapterSelect');
+
+            if (select.value === 'new') {
+                setEditorHTML('');
+                currentChapter = null;
+                currentChapterId = null;
+            } else if (select.value === 'recover') {
+                // Recovery is handled in handleChapterAction
+                return;
+            } else {
+                const chapterIndex = parseInt(select.value);
+                loadChapterByIndex(chapterIndex);
+                return;
+            }
+            updateStats();
+            refreshInsightPanels();
+        }
+
+        function loadChapterByIndex(chapterIndex, highlightQuery = '') {
+            const chapter = chapters[chapterIndex];
+            if (!chapter) return;
+            setEditorHTML(chapter.content || '');
+            currentChapter = chapterIndex;
+            currentChapterId = chapter.id || null;
+            const genreSelect = document.getElementById('genreSelect');
+            if (genreSelect && chapter.genre) {
+                genreSelect.value = chapter.genre;
+                currentGenre = chapter.genre;
+            }
+            updateStats();
+            refreshInsightPanels();
+            loadChapters();
+            document.getElementById('chapterSelect').value = chapterIndex;
+            if (highlightQuery) {
+                highlightInEditor(highlightQuery);
+            }
+        }
+
+        function renderBookList() {
+            const list = document.getElementById('bookList');
+            if (!list) return;
+            if (books.length === 0) {
+                list.innerHTML = '<p class="insight-empty">No books yet.</p>';
+                return;
+            }
+            list.innerHTML = books.map((book) => {
+                const isActive = book.id === currentBookId ? 'active' : '';
+                const count = (book.chapters || []).length;
+                return `
+                    <div class="chapter-item ${isActive}">
+                        <header>
+                            <strong>${escapeHtml(book.title || 'Untitled Book')}</strong>
+                            <button class="link-btn" onclick="selectBook('${book.id}')">Open</button>
+                        </header>
+                        <div class="chapter-meta">${count} chapter${count === 1 ? '' : 's'}</div>
+                        <div class="chapter-actions">
+                            <button class="btn btn-small" onclick="renameBook('${book.id}')">Rename</button>
+                            <button class="btn btn-red btn-small" onclick="deleteBook('${book.id}')">Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function createBook() {
+            const title = prompt('Book title:', 'New Book');
+            if (!title) return;
+            const book = {
+                id: generateId(),
+                title: title,
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                chapters: []
+            };
+            books.unshift(book);
+            saveBooks();
+            selectBook(book.id);
+        }
+
+        function renameBook(bookId) {
+            const book = books.find(b => b.id === bookId);
+            if (!book) return;
+            const title = prompt('Rename book:', book.title || 'Untitled Book');
+            if (!title) return;
+            book.title = title;
+            book.updatedAt = new Date().toISOString();
+            saveBooks();
+            renderBookList();
+            renderBookBar();
+        }
+
+        function deleteBook(bookId) {
+            if (books.length <= 1) {
+                alert('You must keep at least one book.');
+                return;
+            }
+            const book = books.find(b => b.id === bookId);
+            if (!book) return;
+            const confirmed = confirm('Delete "' + book.title + '" and all its chapters? A backup will be created first.');
+            if (!confirmed) return;
+            createWorkspaceBackup('pre-book-delete');
+            removeBookData(book);
+            books = books.filter(b => b.id !== bookId);
+            saveBooks();
+            if (currentBookId === bookId) {
+                currentBookId = books[0].id;
+                localStorage.setItem('currentBookId', currentBookId);
+                setCurrentBook(currentBookId);
+            } else {
+                renderBookList();
+                renderDirectionNotes();
+            }
+        }
+
+        function selectBook(bookId) {
+            setCurrentBook(bookId);
+        }
+
+        function removeBookData(book) {
+            if (!book) return;
+            const bookId = book.id;
+            const chapterIds = (book.chapters || []).map(ch => ch.id);
+            chapterIds.forEach(id => {
+                if (chapterSnapshots[id]) delete chapterSnapshots[id];
+            });
+            localStorage.setItem('chapterSnapshots', JSON.stringify(chapterSnapshots));
+
+            Object.keys(sceneTrackerData).forEach(key => {
+                if (key.startsWith(`book-${bookId}-`) || key === `draft-${bookId}`) {
+                    delete sceneTrackerData[key];
+                }
+            });
+            saveSceneTracker();
+
+            Object.keys(characterHeatmapData).forEach(key => {
+                if (key.startsWith(`book-${bookId}-`) || key === `draft-${bookId}`) {
+                    delete characterHeatmapData[key];
+                }
+            });
+            saveCharacterHeatmap();
+
+            directionNotes = directionNotes.filter(note => note.bookId !== bookId);
+            localStorage.setItem('directionNotes', JSON.stringify(directionNotes));
+
+            if (bookNotes[bookId]) {
+                delete bookNotes[bookId];
+                localStorage.setItem('bookNotes', JSON.stringify(bookNotes));
+            }
+            if (characterRoster[bookId]) {
+                delete characterRoster[bookId];
+                localStorage.setItem('characterRoster', JSON.stringify(characterRoster));
+            }
+        }
+
+        function renderChapterList() {
+            const list = document.getElementById('chapterList');
+            if (!list) return;
+            if (chapters.length === 0) {
+                list.innerHTML = '<p class="insight-empty">No chapters yet.</p>';
+                return;
+            }
+            list.innerHTML = chapters.map((chapter, index) => {
+                const updated = chapter.updatedAt ? new Date(chapter.updatedAt).toLocaleDateString() : 'Unknown';
+                const wordCount = chapter.wordCount || (chapter.content ? chapter.content.split(/\s+/).length : 0);
+                const isActive = currentChapter === index ? 'active' : '';
+                const snapshotInfo = getLatestSnapshotInfo(chapter.id);
+                const snapshotText = snapshotInfo ? 'Snapshot: ' + snapshotInfo : 'Snapshot: --';
+                return `
+                    <div class="chapter-item ${isActive}">
+                        <header>
+                            <strong>${escapeHtml(chapter.title || 'Untitled')}</strong>
+                            <button class="link-btn" onclick="loadChapterByIndex(${index})">Open</button>
+                        </header>
+                        <div class="chapter-meta">${wordCount} words • Updated ${updated}</div>
+                        <div class="chapter-meta">${snapshotText}</div>
+                        <div class="chapter-actions">
+                            <button class="btn btn-small" onclick="renameChapter(${index})">Rename</button>
+                            <button class="btn btn-small" onclick="duplicateChapter(${index})">Duplicate</button>
+                            <button class="btn btn-small" onclick="moveChapter(${index}, -1)">Up</button>
+                            <button class="btn btn-small" onclick="moveChapter(${index}, 1)">Down</button>
+                            <button class="btn btn-orange btn-small" onclick="restoreChapterSnapshot(${index})">Restore</button>
+                            <button class="btn btn-red btn-small" onclick="deleteChapter(${index})">Delete</button>
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function getLatestSnapshotInfo(chapterId) {
+            if (!chapterId || !chapterSnapshots[chapterId] || chapterSnapshots[chapterId].length === 0) return '';
+            const latest = chapterSnapshots[chapterId][0];
+            return new Date(latest.timestamp).toLocaleString();
+        }
+
+        function renameChapter(index) {
+            const chapter = chapters[index];
+            if (!chapter) return;
+            const title = prompt('Rename chapter:', chapter.title || 'Untitled');
+            if (!title) return;
+            chapters[index] = { ...chapter, title: title, updatedAt: new Date().toISOString() };
+            const book = getCurrentBook();
+            if (book) book.updatedAt = new Date().toISOString();
+            saveChapters();
+            loadChapters();
+        }
+
+        function duplicateChapter(index) {
+            const chapter = chapters[index];
+            if (!chapter) return;
+            const copy = {
+                ...chapter,
+                id: generateId(),
+                title: (chapter.title || 'Untitled') + ' (Copy)',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString()
+            };
+            chapters.splice(index + 1, 0, copy);
+            const book = getCurrentBook();
+            if (book) book.updatedAt = new Date().toISOString();
+            saveChapters();
+            createChapterSnapshot(copy);
+            createWorkspaceBackup('duplicate');
+            loadChapters();
+        }
+
+        function deleteChapter(index) {
+            const chapter = chapters[index];
+            if (!chapter) return;
+            const confirmed = confirm('Delete "' + chapter.title + '"? This cannot be undone. A backup will be created first.');
+            if (!confirmed) return;
+            createWorkspaceBackup('pre-delete');
+            chapters.splice(index, 1);
+            if (currentChapter === index) {
+                currentChapter = null;
+                currentChapterId = null;
+                setEditorHTML('');
+            } else if (currentChapter !== null && currentChapter > index) {
+                currentChapter -= 1;
+            }
+            if (currentChapter !== null && chapters[currentChapter]) {
+                currentChapterId = chapters[currentChapter].id || null;
+            }
+            const book = getCurrentBook();
+            if (book) book.updatedAt = new Date().toISOString();
+            saveChapters();
+            loadChapters();
+            updateStats();
+            refreshInsightPanels();
+        }
+
+        function moveChapter(index, direction) {
+            const newIndex = index + direction;
+            if (newIndex < 0 || newIndex >= chapters.length) return;
+            const temp = chapters[index];
+            chapters[index] = chapters[newIndex];
+            chapters[newIndex] = temp;
+            if (currentChapter === index) {
+                currentChapter = newIndex;
+            } else if (currentChapter === newIndex) {
+                currentChapter = index;
+            }
+            if (currentChapter !== null && chapters[currentChapter]) {
+                currentChapterId = chapters[currentChapter].id || null;
+            }
+            const book = getCurrentBook();
+            if (book) book.updatedAt = new Date().toISOString();
+            saveChapters();
+            loadChapters();
+        }
+
+        function restoreChapterSnapshot(index) {
+            const chapter = chapters[index];
+            if (!chapter || !chapter.id) return;
+            const snapshots = chapterSnapshots[chapter.id] || [];
+            if (snapshots.length === 0) {
+                alert('No snapshots available for this chapter.');
+                return;
+            }
+            const confirmed = confirm('Restore the latest snapshot for "' + chapter.title + '"? This will overwrite current content.');
+            if (!confirmed) return;
+            const latest = snapshots[0];
+            chapters[index] = {
+                ...chapter,
+                content: latest.content,
+                title: latest.title || chapter.title,
+                wordCount: latest.wordCount || chapter.wordCount,
+                genre: latest.genre || chapter.genre,
+                updatedAt: new Date().toISOString()
+            };
+            const book = getCurrentBook();
+            if (book) book.updatedAt = new Date().toISOString();
+            saveChapters();
+            if (currentChapter === index) {
+                setEditorHTML(chapters[index].content || '');
+            }
+            loadChapters();
+            updateStats();
+            refreshInsightPanels();
+        }
+
+        function highlightInEditor(query) {
+            if (!query) return;
+            const text = getEditorText().toLowerCase();
+            const index = text.indexOf(query.toLowerCase());
+            if (index >= 0) {
+                selectRangeInEditor(index, query.length);
+            }
+        }
+
+        function handleSearchInput() {
+            const input = document.getElementById('searchInput');
+            const query = input ? input.value.trim() : '';
+            renderSearchResults(query);
+        }
+
+        function renderSearchResults(query) {
+            const results = document.getElementById('searchResults');
+            if (!results) return;
+            if (!query) {
+                results.innerHTML = '<p class="insight-empty">Type to search your chapters.</p>';
+                return;
+            }
+            const crossBook = document.getElementById('crossBookSearch');
+            const searchAllBooks = crossBook && crossBook.checked;
+            const lowerQuery = query.toLowerCase();
+            const matches = [];
+
+            const searchChapters = (chapterList, bookId, bookTitle) => {
+                chapterList.forEach((chapter, index) => {
+                    const content = (chapter.content || '').toLowerCase();
+                    const title = (chapter.title || '').toLowerCase();
+                    const contentIndex = content.indexOf(lowerQuery);
+                    const titleIndex = title.indexOf(lowerQuery);
+                    if (contentIndex >= 0 || titleIndex >= 0) {
+                        const matchIndex = contentIndex >= 0 ? contentIndex : 0;
+                        const snippet = chapter.content ? chapter.content.substring(Math.max(0, matchIndex - 40), matchIndex + 80) : '';
+                        matches.push({
+                            index,
+                            bookId,
+                            bookTitle,
+                            title: chapter.title || 'Untitled',
+                            snippet
+                        });
+                    }
+                });
+            };
+
+            if (searchAllBooks) {
+                books.forEach(book => {
+                    searchChapters(book.chapters || [], book.id, book.title || 'Untitled Book');
+                });
+            } else {
+                searchChapters(chapters, currentBookId, '');
+            }
+
+            if (matches.length === 0) {
+                results.innerHTML = '<p class="insight-empty">No matches found.</p>';
+                return;
+            }
+            results.innerHTML = matches.map(match => {
+                const bookLabel = match.bookTitle ? '<small style="color:#805ad5">' + escapeHtml(match.bookTitle) + '</small><br>' : '';
+                return `
+                <div class="search-result" data-index="${match.index}" data-bookid="${match.bookId}" data-query="${encodeURIComponent(query)}" onclick="handleSearchResultClick(this)">
+                    ${bookLabel}
+                    <strong>${escapeHtml(match.title)}</strong>
+                    <div>${escapeHtml(match.snippet || 'Match in title')}</div>
+                    <small>Click to open</small>
+                </div>
+            `}).join('');
+        }
+
+        function handleSearchResultClick(element) {
+            const index = parseInt(element.getAttribute('data-index'));
+            const encoded = element.getAttribute('data-query') || '';
+            const query = decodeURIComponent(encoded);
+            const bookId = element.getAttribute('data-bookid');
+            if (bookId && bookId !== currentBookId) {
+                setCurrentBook(bookId);
+            }
+            loadChapterByIndex(index, query);
+        }
+
+        // Save chapter function
+        function saveChapter() {
+            const html = getEditorHTML();
+            const textContent = getEditorText().trim();
+
+            if (!textContent) {
+                alert('Please write something before saving!');
+                return;
+            }
+
+            const title = prompt('Enter chapter title:', currentChapter !== null ? chapters[currentChapter].title : 'Chapter ' + (chapters.length + 1));
+            if (!title) return;
+            const wordCount = textContent.split(/\s+/).length;
+            const genreSelect = document.getElementById('genreSelect');
+            const selectedGenre = genreSelect ? genreSelect.value : currentGenre;
+            const existing = currentChapter !== null ? chapters[currentChapter] : null;
+            const chapter = {
+                id: existing && existing.id ? existing.id : generateId(),
+                title: title,
+                content: html,
+                createdAt: existing && existing.createdAt ? existing.createdAt : new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                wordCount: wordCount,
+                genre: selectedGenre
+            };
+            
+            if (currentChapter !== null) {
+                chapters[currentChapter] = chapter;
+            } else {
+                chapters.push(chapter);
+                currentChapter = chapters.length - 1;
+            }
+            currentChapterId = chapter.id;
+            const book = getCurrentBook();
+            if (book) {
+                book.updatedAt = new Date().toISOString();
+            }
+            saveChapters();
+            createChapterSnapshot(chapter);
+            createWorkspaceBackup('autosave');
+            loadChapters();
+            document.getElementById('chapterSelect').value = currentChapter;
+            
+            alert('Chapter saved successfully!');
+        }
+
+        // Export current chapter
+        function exportCurrentChapter() {
+            const content = getEditorText();
+            if (!content.trim()) {
+                alert('Nothing to export!');
+                return;
+            }
+            
+            const blob = new Blob([content], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'current-chapter-' + new Date().toISOString().split('T')[0] + '.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        // Export all chapters
+        function exportAllChapters() {
+            if (chapters.length === 0) {
+                alert('No chapters to export!');
+                return;
+            }
+            
+            const book = getCurrentBook();
+            const bookTitle = book ? book.title : 'Current Book';
+            let allContent = 'NOVEL: ' + bookTitle + '\n';
+            allContent += 'Exported on: ' + new Date().toLocaleDateString() + '\n';
+            allContent += 'Total Chapters: ' + chapters.length + '\n\n';
+            allContent += '='.repeat(50) + '\n\n';
+            
+            chapters.forEach((chapter, index) => {
+                allContent += 'CHAPTER ' + (index + 1) + ': ' + chapter.title + '\n';
+                allContent += 'Word Count: ' + chapter.wordCount + '\n';
+                allContent += 'Created: ' + new Date(chapter.createdAt).toLocaleDateString() + '\n';
+                allContent += '-'.repeat(30) + '\n';
+                allContent += chapter.content + '\n\n';
+                allContent += '='.repeat(50) + '\n\n';
+            });
+            
+            const blob = new Blob([allContent], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'novel-all-chapters-' + new Date().toISOString().split('T')[0] + '.txt';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function exportWorkspace() {
+            createWorkspaceBackup('manual');
+            const payload = buildWorkspacePayload();
+            const json = JSON.stringify(payload, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'novel-workspace-' + new Date().toISOString().split('T')[0] + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+
+        function triggerImport(mode) {
+            importMode = mode;
+            const input = document.getElementById('workspaceImportInput');
+            if (input) {
+                input.value = '';
+                input.click();
+            }
+        }
+
+        function handleWorkspaceImport(event) {
+            const file = event.target.files && event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(loadEvent) {
+                try {
+                    const parsed = JSON.parse(loadEvent.target.result);
+                    importWorkspacePayload(parsed, importMode);
+                } catch (err) {
+                    alert('Invalid JSON file. Please choose a valid workspace export.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function importWorkspacePayload(payload, mode = 'merge') {
+            if (!payload || (!payload.books && !payload.chapters)) {
+                alert('This workspace file is missing book data.');
+                return;
+            }
+            if (mode === 'replace') {
+                const confirmed = confirm('Replace will overwrite current books and insights. A backup will be created first. Continue?');
+                if (!confirmed) return;
+            }
+            createWorkspaceBackup('pre-import');
+            const incomingBooks = Array.isArray(payload.books) ? payload.books : [];
+            const incomingChapters = Array.isArray(payload.chapters) ? payload.chapters : [];
+            const incomingScene = payload.sceneTrackerData || {};
+            const incomingCharacter = payload.characterHeatmapData || {};
+            const incomingSnapshots = payload.chapterSnapshots || {};
+            const incomingSettings = payload.appSettings || {};
+            const incomingNotes = payload.directionNotes || [];
+            const incomingBookNotes = payload.bookNotes || {};
+            const incomingRoster = payload.characterRoster || {};
+            const bookIdMap = {};
+            const existingChapterIds = new Set();
+            books.forEach(book => (book.chapters || []).forEach(ch => existingChapterIds.add(ch.id)));
+
+            const buildBookList = (sourceBooks) => sourceBooks.map(book => ({
+                ...book,
+                chapters: Array.isArray(book.chapters) ? book.chapters : []
+            }));
+
+            const legacyBook = incomingChapters.length ? [{
+                id: generateId(),
+                title: 'Imported Book',
+                createdAt: new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+                chapters: incomingChapters
+            }] : [];
+
+            const normalizedIncomingBooks = buildBookList(incomingBooks.length ? incomingBooks : legacyBook);
+            normalizedIncomingBooks.forEach(book => {
+                if (!book.id) book.id = generateId();
+            });
+            const defaultIncomingBookId = normalizedIncomingBooks.length ? normalizedIncomingBooks[0].id : null;
+
+            if (mode === 'replace') {
+                books = normalizedIncomingBooks;
+                normalizeBooks();
+                sceneTrackerData = { ...incomingScene };
+                characterHeatmapData = { ...incomingCharacter };
+                chapterSnapshots = { ...incomingSnapshots };
+                appSettings = { ...incomingSettings };
+                directionNotes = Array.isArray(incomingNotes) ? incomingNotes : [];
+                bookNotes = { ...incomingBookNotes };
+                characterRoster = { ...incomingRoster };
+            } else {
+                const chapterIdMapsByBook = {};
+                const existingBookIds = new Set(books.map(b => b.id));
+
+                normalizedIncomingBooks.forEach((incomingBook) => {
+                    const newBook = { ...incomingBook };
+                    const originalBookId = newBook.id || generateId();
+                    if (!newBook.id) newBook.id = originalBookId;
+                    if (existingBookIds.has(newBook.id)) {
+                        const oldId = newBook.id;
+                        newBook.id = generateId();
+                        bookIdMap[oldId] = newBook.id;
+                    }
+                    existingBookIds.add(newBook.id);
+
+                    const chapterIdMap = {};
+                    newBook.chapters = (newBook.chapters || []).map((chapter) => {
+                        const updated = { ...chapter };
+                        if (!updated.id) updated.id = generateId();
+                        if (existingChapterIds.has(updated.id)) {
+                            const oldId = updated.id;
+                            updated.id = generateId();
+                            chapterIdMap[oldId] = updated.id;
+                        }
+                        existingChapterIds.add(updated.id);
+                        return updated;
+                    });
+
+                    chapterIdMapsByBook[originalBookId] = chapterIdMap;
+                    chapterIdMapsByBook[newBook.id] = chapterIdMap;
+                    books.push(newBook);
+                });
+
+                const resolvedDefaultBookId = bookIdMap[defaultIncomingBookId] || defaultIncomingBookId || currentBookId;
+                const flattenedChapterIdMap = flattenChapterIdMaps(chapterIdMapsByBook);
+
+                Object.keys(incomingSnapshots).forEach((key) => {
+                    const remappedKey = remapSnapshotKey(key, flattenedChapterIdMap);
+                    const incomingList = incomingSnapshots[key] || [];
+                    if (!chapterSnapshots[remappedKey]) chapterSnapshots[remappedKey] = [];
+                    chapterSnapshots[remappedKey] = chapterSnapshots[remappedKey].concat(incomingList);
+                });
+
+                mergeAllInsightData(incomingScene, sceneTrackerData, bookIdMap, chapterIdMapsByBook, resolvedDefaultBookId);
+                mergeAllInsightData(incomingCharacter, characterHeatmapData, bookIdMap, chapterIdMapsByBook, resolvedDefaultBookId);
+
+                appSettings = { ...appSettings, ...incomingSettings };
+                directionNotes = directionNotes.concat(incomingNotes.map(note => ({
+                    ...note,
+                    bookId: bookIdMap[note.bookId] || note.bookId || resolvedDefaultBookId
+                })));
+                Object.keys(incomingBookNotes).forEach(key => {
+                    const resolvedKey = bookIdMap[key] || key;
+                    if (!bookNotes[resolvedKey]) bookNotes[resolvedKey] = '';
+                    bookNotes[resolvedKey] += (bookNotes[resolvedKey] ? '\n\n' : '') + incomingBookNotes[key];
+                });
+                Object.keys(incomingRoster).forEach(key => {
+                    const resolvedKey = bookIdMap[key] || key;
+                    if (!characterRoster[resolvedKey]) characterRoster[resolvedKey] = [];
+                    characterRoster[resolvedKey] = characterRoster[resolvedKey].concat(incomingRoster[key] || []);
+                });
+            }
+
+            normalizeBooks();
+            saveBooks();
+            localStorage.setItem('sceneTrackerData', JSON.stringify(sceneTrackerData));
+            localStorage.setItem('characterHeatmapData', JSON.stringify(characterHeatmapData));
+            localStorage.setItem('chapterSnapshots', JSON.stringify(chapterSnapshots));
+            localStorage.setItem('directionNotes', JSON.stringify(directionNotes));
+            localStorage.setItem('bookNotes', JSON.stringify(bookNotes));
+            localStorage.setItem('characterRoster', JSON.stringify(characterRoster));
+            saveSettings();
+            if (payload.currentBookId) {
+                currentBookId = bookIdMap[payload.currentBookId] || payload.currentBookId;
+                localStorage.setItem('currentBookId', currentBookId);
+            }
+            ensureBooks();
+            updateBackupStatus();
+            alert('Workspace import completed.');
+        }
+
+        function remapSnapshotKey(key, chapterIdMap) {
+            if (!key || !chapterIdMap) return key;
+            return chapterIdMap[key] || key;
+        }
+
+        function flattenChapterIdMaps(chapterIdMapsByBook) {
+            const merged = {};
+            Object.values(chapterIdMapsByBook || {}).forEach(map => {
+                Object.keys(map || {}).forEach(key => {
+                    merged[key] = map[key];
+                });
+            });
+            return merged;
+        }
+
+        function mergeAllInsightData(source, target, bookIdMap, chapterIdMapsByBook, defaultBookId) {
+            Object.keys(source).forEach((key) => {
+                const remappedKey = remapInsightKeyForBooks(key, bookIdMap, chapterIdMapsByBook, defaultBookId);
+                const incomingList = source[key] || [];
+                if (!target[remappedKey]) target[remappedKey] = [];
+                target[remappedKey] = target[remappedKey].concat(incomingList);
+            });
+        }
+
+        function remapInsightKeyForBooks(key, bookIdMap, chapterIdMapsByBook, defaultBookId) {
+            if (!key) return key;
+            if (key.startsWith('book-')) {
+                const parts = key.split('-');
+                const existingBookId = parts[1];
+                const chapterId = parts.slice(3).join('-');
+                const resolvedBookId = bookIdMap[existingBookId] || existingBookId;
+                const chapterMap = chapterIdMapsByBook[existingBookId] || chapterIdMapsByBook[resolvedBookId] || {};
+                const resolvedChapterId = chapterMap[chapterId] || chapterId;
+                return buildChapterKey(resolvedBookId, resolvedChapterId);
+            }
+            if (key.startsWith('chapter-')) {
+                const raw = key.replace('chapter-', '');
+                if (!defaultBookId) return key;
+                const chapterMap = chapterIdMapsByBook[defaultBookId] || {};
+                const resolvedChapterId = chapterMap[raw] || raw;
+                return buildChapterKey(defaultBookId, resolvedChapterId);
+            }
+            if (key.startsWith('draft-')) {
+                return defaultBookId ? `draft-${defaultBookId}` : key;
+            }
+            return key;
+        }
+
+        function restoreLastWorkspaceBackup() {
+            if (workspaceBackups.length === 0) {
+                alert('No backups found.');
+                return;
+            }
+            const confirmed = confirm('Restore the most recent backup? This will overwrite current data.');
+            if (!confirmed) return;
+            const last = workspaceBackups[0];
+            importWorkspacePayload(last, 'replace');
+        }
+
+        // Analyze chapter function
+        function analyzeChapter() {
+            const content = getEditorText().trim();
+            if (!content) {
+                alert('Please write something before analyzing!');
+                return;
+            }
+            
+            const analysisResults = document.getElementById('analysisResults');
+            analysisResults.innerHTML = '<div class="analysis-item"><h4>Analyzing...</h4><p>Processing your chapter with AI analysis...</p></div>';
+            
+            setTimeout(() => {
+                const analysis = performAIAnalysis(content);
+                displayAnalysis(analysis, content);
+            }, 2000);
+        }
+
+        // AI Analysis function
+        function performAIAnalysis(content) {
+            const words = content.split(/\s+/).length;
+            const sentences = content.split(/[.!?]+/).filter(s => s.trim()).length;
+            const avgWordsPerSentence = Math.round(words / sentences);
+            
+            const dialogueLines = content.match(/"[^"]*"/g) || [];
+            const dialoguePercentage = (dialogueLines.join('').length / content.length) * 100;
+            
+            const positiveWords = ['happy', 'joy', 'love', 'excited', 'wonderful', 'amazing', 'beautiful', 'good', 'great'];
+            const negativeWords = ['sad', 'angry', 'fear', 'terrible', 'awful', 'horrible', 'scared', 'bad', 'dark'];
+            const tensionWords = ['suddenly', 'quickly', 'urgent', 'danger', 'threat', 'crisis', 'explosion', 'crash'];
+            
+            const text = content.toLowerCase();
+            
+            const positiveCount = positiveWords.reduce((count, word) => count + (text.split(word).length - 1), 0);
+            const negativeCount = negativeWords.reduce((count, word) => count + (text.split(word).length - 1), 0);
+            const tensionCount = tensionWords.reduce((count, word) => count + (text.split(word).length - 1), 0);
+            
+            return {
+                pacing: avgWordsPerSentence > 20 ? 'slow' : avgWordsPerSentence < 10 ? 'fast' : 'good',
+                dialogue: dialoguePercentage,
+                emotional: positiveCount > negativeCount ? 'positive' : negativeCount > positiveCount ? 'negative' : 'neutral',
+                wordCount: words,
+                positiveWords: positiveCount,
+                negativeWords: negativeCount,
+                tensionWords: tensionCount,
+                avgSentenceLength: avgWordsPerSentence
+            };
+        }
+
+        // Display analysis results
+        function displayAnalysis(analysis, content = '') {
+            const analysisResults = document.getElementById('analysisResults');
+            let html = '';
+            
+            // Pacing analysis
+            if (analysis.pacing === 'slow') {
+                html += '<div class="analysis-item warning"><h4><span class="analysis-icon">&#9888;</span>Pacing Issue</h4><p>Your sentences are quite long (avg: ' + analysis.avgSentenceLength + ' words). Consider breaking them up for better readability.</p></div>';
+            } else if (analysis.pacing === 'fast') {
+                html += '<div class="analysis-item suggestion"><h4><span class="analysis-icon">&#128161;</span>Pacing Suggestion</h4><p>Your sentences are short and punchy (avg: ' + analysis.avgSentenceLength + ' words). Consider adding some longer, more descriptive sentences for variety.</p></div>';
+            } else {
+                html += '<div class="analysis-item suggestion"><h4><span class="analysis-icon">&#10004;</span>Good Pacing</h4><p>Your sentence length is well-balanced (avg: ' + analysis.avgSentenceLength + ' words) for engaging reading.</p></div>';
+            }
+            
+            // Dialogue analysis
+            const dialogueLines = content ? (content.match(/"[^"]*"/g) || []) : [];
+            if (analysis.dialogue > 0) {
+                html += '<div class="analysis-item suggestion"><h4><span class="analysis-icon">&#128172;</span>Dialogue Analysis</h4><p>Dialogue makes up ' + Math.round(analysis.dialogue) + '% of your chapter. ' + dialogueLines.length + ' dialogue lines detected.</p></div>';
+            } else {
+                html += '<div class="analysis-item suggestion"><h4><span class="analysis-icon">&#128172;</span>Dialogue Suggestion</h4><p>Consider adding more dialogue to bring your characters to life and advance the plot.</p></div>';
+            }
+            
+            // Emotional tone analysis
+            html += '<div class="analysis-item suggestion"><h4><span class="analysis-icon">&#128522;</span>Emotional Tone</h4><p>Dominant tone: <strong>' + analysis.emotional + '</strong><br>';
+            html += 'Positive words: ' + analysis.positiveWords + ', Negative words: ' + analysis.negativeWords + ', Tension words: ' + analysis.tensionWords + '</p></div>';
+            
+            // Word count analysis
+            if (analysis.wordCount < 500) {
+                html += '<div class="analysis-item suggestion"><h4><span class="analysis-icon">&#128221;</span>Length Suggestion</h4><p>Your chapter is quite short (' + analysis.wordCount + ' words). Consider expanding with more description, dialogue, or character development.</p></div>';
+            } else if (analysis.wordCount > 3000) {
+                html += '<div class="analysis-item suggestion"><h4><span class="analysis-icon">&#128221;</span>Length Note</h4><p>Your chapter is quite long (' + analysis.wordCount + ' words). Consider if it might work better split into multiple chapters.</p></div>';
+            } else {
+                html += '<div class="analysis-item suggestion"><h4><span class="analysis-icon">&#128221;</span>Good Length</h4><p>Your chapter length (' + analysis.wordCount + ' words) is well-suited for engaging reading.</p></div>';
+            }
+            
+            analysisResults.innerHTML = html;
+        }
+
+        // Chapter direction suggestions
+        function generateChapterDirections() {
+            const results = document.getElementById('directionResults');
+            const panel = document.getElementById('directionPanel');
+            const genreSelect = document.getElementById('genreSelect');
+
+            if (!results || !panel) {
+                alert('Direction panel elements are missing.');
+                return;
+            }
+
+            const content = getEditorText().trim();
+            if (!content) {
+                results.innerHTML = '<p>Write a bit of your chapter first, then click <strong>Direction Ideas</strong> for targeted suggestions.</p>';
+                panel.scrollIntoView({ behavior: 'smooth' });
+                return;
+            }
+            
+            const genre = genreSelect ? genreSelect.value : 'general';
+            const key = getChapterKey();
+            const sceneBeats = sceneTrackerData[key] || [];
+            const characterBeats = characterHeatmapData[key] || [];
+            currentDirectionSuggestions = buildChapterDirectionSuggestions(content, genre, sceneBeats, characterBeats);
+            showAllDirections = false;
+            renderDirectionCards();
+            panel.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function buildChapterDirectionSuggestions(content, genre, sceneBeats, characterBeats) {
+            const words = content.split(/\s+/).filter(Boolean);
+            const wordCount = words.length;
+            const sentences = content.split(/[.!?]+/).filter(s => s.trim());
+            const avgSentence = sentences.length ? Math.round(wordCount / sentences.length) : 0;
+            const dialogueMatches = content.match(/"[^"]+"/g) || [];
+            const dialogueRatio = content.length ? (dialogueMatches.join('').length / content.length) : 0;
+            const tensionWords = ['danger', 'threat', 'urgent', 'sudden', 'battle', 'mystery', 'betrayal', 'storm', 'secret', 'reveal'];
+            const lower = content.toLowerCase();
+            const tensionHits = tensionWords.reduce((count, word) => count + (lower.split(word).length - 1), 0);
+            const lastScene = sceneBeats.length ? sceneBeats[sceneBeats.length - 1] : null;
+            const lastCharacter = characterBeats.length ? characterBeats[characterBeats.length - 1] : null;
+            
+            const genreFocus = {
+                romance: 'relationship stakes',
+                mystery: 'investigation trail',
+                fantasy: 'mythic conflict',
+                scifi: 'speculative twist',
+                thriller: 'survival pressure',
+                horror: 'creeping dread',
+                historical: 'era-defining tension',
+                literary: 'internal conflict',
+                general: 'central conflict'
+            };
+            const focus = genreFocus[genre] || genreFocus.general;
+            
+            const suggestions = [];
+            suggestions.push({
+                title: `Escalate the ${focus}`,
+                detail: `At roughly ${wordCount} words, it's a great moment to complicate the protagonist's plan. Drop a twist, deadline, or moral cost that makes their current approach impossible.`,
+                prompt: 'What consequence will force your lead to choose a bolder path?'
+            });
+
+            if (lastScene) {
+                suggestions.push({
+                    title: 'Push the last scene beat harder',
+                    detail: `Your last beat focused on "${lastScene.goal}". Raise the obstacle by intensifying "${lastScene.obstacle}" or add a new complication that reverses "${lastScene.outcome}".`,
+                    prompt: 'How can you make the last scene beat costlier or more public?'
+                });
+            }
+
+            if (lastCharacter) {
+                const arcLabel = lastCharacter.state === 'progress' ? 'progress' : lastCharacter.state === 'regress' ? 'setback' : 'stall';
+                suggestions.push({
+                    title: 'Advance the latest character arc',
+                    detail: `You last noted ${lastCharacter.name}'s ${arcLabel}. Let that shift spill into the next decision or relationship beat.`,
+                    prompt: `What immediate choice could ${lastCharacter.name} make that proves this change?`
+                });
+            }
+            
+            if (dialogueRatio < 0.08) {
+                suggestions.push({
+                    title: 'Add a revealing conversation',
+                    detail: 'This draft is light on dialogue. Insert a short exchange where an ally challenges your protagonist or delivers a clue that alters the next objective.',
+                    prompt: 'Who could confront your protagonist and what uncomfortable truth might they reveal?'
+                });
+            } else {
+                suggestions.push({
+                    title: 'Pay off dialogue with action',
+                    detail: 'You already have dynamic conversation-follow it with a decisive action beat that proves whether characters meant what they said.',
+                    prompt: 'After the last line of dialogue, what bold move or mistake will show their true intent?'
+                });
+            }
+            
+            if (avgSentence > 20) {
+                suggestions.push({
+                    title: 'Inject a kinetic beat',
+                    detail: `Sentences average about ${avgSentence} words. Break up the flow with a sharp sensory detail or quick action to keep tension buoyant.`,
+                    prompt: 'Which physical cue or sound can you describe in under ten words to snap readers to attention?'
+                });
+            } else {
+                suggestions.push({
+                    title: 'Pause for interior insight',
+                    detail: 'Your brisk pacing invites a reflective beat. Let the protagonist interpret what just happened before the next push forward.',
+                    prompt: 'What belief or fear can they articulate that will color the coming scene?'
+                });
+            }
+            
+            if (tensionHits === 0) {
+                suggestions.push({
+                    title: 'Plant a foreshadowing detail',
+                    detail: 'Seed a subtle omen or oddity so readers sense a storm building even before it breaks.',
+                    prompt: 'What object, rumor, or sensory glitch could whisper that trouble is near?'
+                });
+            } else {
+                suggestions.push({
+                    title: 'Pay off a lurking threat',
+                    detail: 'You have already hinted at danger-let one of those warnings erupt now to reward attentive readers.',
+                    prompt: 'Which earlier clue can you bring roaring back in the next scene?'
+                });
+            }
+
+            if (genre === 'mystery') {
+                suggestions.push({
+                    title: 'Introduce a misleading clue',
+                    detail: 'Give the protagonist a clue that seems helpful but later pivots to a new suspect or motive.',
+                    prompt: 'What evidence feels obvious now but can be reinterpreted later?'
+                });
+            }
+
+            if (genre === 'romance') {
+                suggestions.push({
+                    title: 'Raise the emotional stakes',
+                    detail: 'Create a moment where intimacy increases, but the cost of vulnerability becomes clear.',
+                    prompt: 'What secret or fear could surface right when things feel safe?'
+                });
+            }
+
+            if (genre === 'fantasy') {
+                suggestions.push({
+                    title: 'Expose the mythic price',
+                    detail: 'Make the magic or power exact a visible cost, forcing a moral or tactical choice.',
+                    prompt: 'What tradeoff makes the power feel dangerous or rare?'
+                });
+            }
+
+            if (genre === 'scifi') {
+                suggestions.push({
+                    title: 'Trigger a speculative twist',
+                    detail: 'Let the tech or system behave unexpectedly, forcing your lead to rethink their plan.',
+                    prompt: 'What rule of your world could bend in a way that raises stakes?'
+                });
+            }
+
+            if (genre === 'thriller') {
+                suggestions.push({
+                    title: 'Tighten the deadline',
+                    detail: 'Reduce the time your protagonist has to act. A ticking clock forces riskier decisions.',
+                    prompt: 'What external countdown could force your lead into a corner right now?'
+                });
+            }
+
+            if (genre === 'horror') {
+                suggestions.push({
+                    title: 'Erode safety',
+                    detail: 'Remove something that made your character feel safe -- a light, a weapon, a companion, a locked door.',
+                    prompt: 'What one comfort can you strip away to deepen the dread?'
+                });
+            }
+
+            if (genre === 'historical') {
+                suggestions.push({
+                    title: 'Collide personal and historical stakes',
+                    detail: 'Let a real historical event or custom force your character into an impossible choice.',
+                    prompt: 'What period-specific constraint could reshape the protagonist\'s plan?'
+                });
+            }
+
+            if (genre === 'literary') {
+                suggestions.push({
+                    title: 'Expose an inner contradiction',
+                    detail: 'Let the protagonist act in a way that contradicts what they believe about themselves.',
+                    prompt: 'What self-deception can surface through a small, telling action?'
+                });
+            }
+            
+            while (suggestions.length < 3) {
+                suggestions.push({
+                    title: 'Clarify the chapter question',
+                    detail: 'State (even briefly) what this chapter must resolve. Readers lean in when they know what success or failure looks like.',
+                    prompt: 'Complete this sentence: By the end of this scene, the reader should know whether ______.'
+                });
+            }
+            
+            return suggestions;
+        }
+
+        function renderDirectionCards() {
+            const results = document.getElementById('directionResults');
+            if (!results) return;
+            if (!currentDirectionSuggestions.length) {
+                results.innerHTML = '<p>No suggestions yet.</p>';
+                return;
+            }
+            const visible = showAllDirections ? currentDirectionSuggestions : currentDirectionSuggestions.slice(0, 3);
+            const cardsHtml = visible.map((suggestion, index) => `
+                <div class="direction-card">
+                    <h4>${suggestion.title}</h4>
+                    <p>${suggestion.detail}</p>
+                    <small>${suggestion.prompt}</small>
+                    <div class="direction-actions">
+                        <button class="btn btn-small" onclick="saveDirectionNote(${index})">Save Idea</button>
+                    </div>
+                </div>
+            `).join('');
+            const toggleLabel = showAllDirections ? 'Show fewer' : 'Show more';
+            results.innerHTML = `
+                <div class="direction-cards">${cardsHtml}</div>
+                <div class="direction-toggle">
+                    <button class="btn btn-outline btn-small" onclick="toggleDirectionCount()">${toggleLabel}</button>
+                </div>
+            `;
+        }
+
+        function toggleDirectionCount() {
+            showAllDirections = !showAllDirections;
+            renderDirectionCards();
+        }
+
+        function saveDirectionNote(index) {
+            const suggestion = currentDirectionSuggestions[index];
+            if (!suggestion) return;
+            const note = {
+                id: generateId(),
+                savedAt: new Date().toISOString(),
+                bookId: currentBookId,
+                title: suggestion.title,
+                detail: suggestion.detail,
+                prompt: suggestion.prompt
+            };
+            directionNotes.unshift(note);
+            directionNotes = directionNotes.slice(0, 20);
+            localStorage.setItem('directionNotes', JSON.stringify(directionNotes));
+            renderDirectionNotes();
+        }
+
+        function renderDirectionNotes() {
+            const list = document.getElementById('directionNotesList');
+            if (!list) return;
+            const filtered = directionNotes.filter(note => !note.bookId || note.bookId === currentBookId);
+            if (filtered.length === 0) {
+                list.innerHTML = '<p class="insight-empty">No saved direction ideas yet.</p>';
+                return;
+            }
+            list.innerHTML = filtered.map(note => `
+                <div class="direction-note">
+                    <header>
+                        <strong>${escapeHtml(note.title)}</strong>
+                        <button class="link-btn" onclick="removeDirectionNote('${note.id}')">Remove</button>
+                    </header>
+                    <p>${escapeHtml(note.detail)}</p>
+                    <small>${escapeHtml(note.prompt)}</small>
+                </div>
+            `).join('');
+        }
+
+        function removeDirectionNote(noteId) {
+            directionNotes = directionNotes.filter(note => note.id !== noteId);
+            localStorage.setItem('directionNotes', JSON.stringify(directionNotes));
+            renderDirectionNotes();
+        }
+
+
+        // Scene & character insight helpers
+        function getChapterKey() {
+            if (currentBookId) {
+                if (currentChapterId) return buildChapterKey(currentBookId, currentChapterId);
+                if (currentChapter !== null) return buildChapterKey(currentBookId, currentChapter);
+                return `draft-${currentBookId}`;
+            }
+            if (currentChapterId) return `chapter-${currentChapterId}`;
+            return currentChapter !== null ? `chapter-${currentChapter}` : 'draft';
+        }
+
+        function refreshInsightPanels() {
+            renderSceneTracker();
+            renderCharacterHeatmap();
+            renderHealthScore();
+        }
+
+        function saveSceneTracker() {
+            localStorage.setItem('sceneTrackerData', JSON.stringify(sceneTrackerData));
+        }
+
+        function saveCharacterHeatmap() {
+            localStorage.setItem('characterHeatmapData', JSON.stringify(characterHeatmapData));
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            return text.replace(/[&<>"']/g, char => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char] || char));
+        }
+
+        function addSceneBeat() {
+            const goalInput = document.getElementById('sceneGoalInput');
+            const obstacleInput = document.getElementById('sceneObstacleInput');
+            const outcomeInput = document.getElementById('sceneOutcomeInput');
+            if (!goalInput || !obstacleInput || !outcomeInput) return;
+            const goal = goalInput.value.trim();
+            const obstacle = obstacleInput.value.trim();
+            const outcome = outcomeInput.value.trim();
+            if (!goal || !obstacle || !outcome) {
+                alert('Please fill in goal, obstacle, and outcome before adding a beat.');
+                return;
+            }
+            const key = getChapterKey();
+            if (!sceneTrackerData[key]) sceneTrackerData[key] = [];
+            sceneTrackerData[key].push({ goal, obstacle, outcome, timestamp: Date.now() });
+            saveSceneTracker();
+            goalInput.value = '';
+            obstacleInput.value = '';
+            outcomeInput.value = '';
+            renderSceneTracker();
+            renderHealthScore();
+        }
+
+        function removeSceneBeat(index) {
+            const key = getChapterKey();
+            if (!sceneTrackerData[key]) return;
+            sceneTrackerData[key].splice(index, 1);
+            saveSceneTracker();
+            renderSceneTracker();
+            renderHealthScore();
+        }
+
+        function renderSceneTracker() {
+            const list = document.getElementById('sceneTrackerList');
+            if (!list) return;
+            const key = getChapterKey();
+            const beats = sceneTrackerData[key] || [];
+            if (!beats.length) {
+                list.innerHTML = '<p class="insight-empty">No scene beats yet. Capture the goal/obstacle/outcome to keep this chapter moving.</p>';
+                return;
+            }
+            list.innerHTML = beats.map((beat, index) => `
+                <div class="scene-card">
+                    <header>
+                        <strong>Beat ${index + 1}</strong>
+                        <button class="link-btn" onclick="removeSceneBeat(${index})">Remove</button>
+                    </header>
+                    <p><strong>Goal:</strong> ${escapeHtml(beat.goal)}</p>
+                    <p><strong>Obstacle:</strong> ${escapeHtml(beat.obstacle)}</p>
+                    <p><strong>Outcome:</strong> ${escapeHtml(beat.outcome)}</p>
+                </div>
+            `).join('');
+        }
+
+        function addCharacterBeat() {
+            const nameInput = document.getElementById('characterNameInput');
+            const stateInput = document.getElementById('characterStateInput');
+            const notesInput = document.getElementById('characterNotesInput');
+            if (!nameInput || !stateInput || !notesInput) return;
+            const name = nameInput.value.trim();
+            const state = stateInput.value;
+            const notes = notesInput.value.trim();
+            if (!name) {
+                alert('Please provide a character name.');
+                return;
+            }
+            const key = getChapterKey();
+            if (!characterHeatmapData[key]) characterHeatmapData[key] = [];
+            characterHeatmapData[key].push({ name, state, notes, timestamp: Date.now() });
+            saveCharacterHeatmap();
+            nameInput.value = '';
+            notesInput.value = '';
+            renderCharacterHeatmap();
+            renderHealthScore();
+        }
+
+        function removeCharacterBeat(index) {
+            const key = getChapterKey();
+            if (!characterHeatmapData[key]) return;
+            characterHeatmapData[key].splice(index, 1);
+            saveCharacterHeatmap();
+            renderCharacterHeatmap();
+            renderHealthScore();
+        }
+
+        function renderCharacterHeatmap() {
+            const list = document.getElementById('characterHeatmapList');
+            if (!list) return;
+            const key = getChapterKey();
+            const beats = characterHeatmapData[key] || [];
+            if (!beats.length) {
+                list.innerHTML = '<p class="insight-empty">Track how each POV character is evolving scene by scene.</p>';
+                return;
+            }
+            const stateLabels = { progress: 'Progress', regress: 'Setback', static: 'Holding' };
+            list.innerHTML = beats.map((beat, index) => `
+                <div class="character-card">
+                    <header>
+                        <strong>${escapeHtml(beat.name)}</strong>
+                        <button class="link-btn" onclick="removeCharacterBeat(${index})">Remove</button>
+                    </header>
+                    <div class="heatmap-chip ${beat.state}">${stateLabels[beat.state] || beat.state}</div>
+                    <p>${escapeHtml(beat.notes)}</p>
+                </div>
+            `).join('');
+        }
+
+        function calculateChapterHealthScore() {
+            const key = getChapterKey();
+            const sceneBeats = sceneTrackerData[key] || [];
+            const characterBeats = characterHeatmapData[key] || [];
+            const content = getEditorText().trim();
+            const wordCount = content.split(/\s+/).filter(Boolean).length;
+            const sentences = content.split(/[.!?]+/).filter(s => s.trim());
+            const avgSentenceLength = sentences.length ? Math.round(wordCount / sentences.length) : 0;
+            const dialogueMatches = content.match(/"[^"]+"/g) || [];
+            const dialogueLength = dialogueMatches.join('').length;
+            const dialogueRatio = content.length ? (dialogueLength / content.length) : 0;
+            
+            let score = 0;
+            const breakdown = {
+                structural: 0,
+                character: 0,
+                technical: 0
+            };
+            const recommendations = [];
+            
+            // Structural Momentum (0-40 points)
+            const sceneBeatScore = Math.min(sceneBeats.length * 10, 30);
+            breakdown.structural += sceneBeatScore;
+            if (sceneBeats.length < 2) {
+                recommendations.push('Add at least 2 scene beats (goal/obstacle/outcome) to strengthen structure');
+            }
+            
+            let varietyBonus = 0;
+            if (sceneBeats.length >= 2) {
+                const goals = sceneBeats.map(b => b.goal.toLowerCase());
+                const obstacles = sceneBeats.map(b => b.obstacle.toLowerCase());
+                const uniqueGoals = new Set(goals).size;
+                const uniqueObstacles = new Set(obstacles).size;
+                if (uniqueGoals >= 2 && uniqueObstacles >= 2) {
+                    varietyBonus = 10;
+                }
+            }
+            breakdown.structural += varietyBonus;
+            if (varietyBonus === 0 && sceneBeats.length >= 2) {
+                recommendations.push('Vary your scene goals and obstacles for more dynamic pacing');
+            }
+            
+            // Character Development (0-30 points)
+            const characterBeatScore = Math.min(characterBeats.length * 10, 20);
+            breakdown.character += characterBeatScore;
+            if (characterBeats.length < 1) {
+                recommendations.push('Track at least one character beat to show character development');
+            }
+            
+            let arcBalanceBonus = 0;
+            if (characterBeats.length >= 2) {
+                const states = characterBeats.map(b => b.state);
+                const hasProgress = states.includes('progress');
+                const hasRegress = states.includes('regress');
+                if (hasProgress && hasRegress) {
+                    arcBalanceBonus = 10;
+                } else if (hasProgress || hasRegress) {
+                    arcBalanceBonus = 5;
+                }
+            }
+            breakdown.character += arcBalanceBonus;
+            if (arcBalanceBonus < 10 && characterBeats.length >= 2) {
+                recommendations.push('Mix progress and setbacks for more compelling character arcs');
+            }
+            
+            // Technical Execution (0-30 points)
+            let wordCountScore = 0;
+            if (wordCount >= 500 && wordCount <= 3000) {
+                wordCountScore = 10;
+            } else if (wordCount >= 300 && wordCount < 500) {
+                wordCountScore = 5;
+            } else if (wordCount > 3000 && wordCount <= 4000) {
+                wordCountScore = 5;
+            }
+            breakdown.technical += wordCountScore;
+            if (wordCountScore < 10) {
+                if (wordCount < 500) {
+                    recommendations.push('Expand chapter to 500-3000 words for optimal length');
+                } else if (wordCount > 3000) {
+                    recommendations.push('Consider splitting this chapter (over 3000 words)');
+                }
+            }
+            
+            let pacingScore = 0;
+            if (avgSentenceLength >= 10 && avgSentenceLength <= 20) {
+                pacingScore = 10;
+            } else if (avgSentenceLength >= 8 && avgSentenceLength < 10) {
+                pacingScore = 7;
+            } else if (avgSentenceLength > 20 && avgSentenceLength <= 25) {
+                pacingScore = 7;
+            } else if (avgSentenceLength > 5 && avgSentenceLength < 8) {
+                pacingScore = 5;
+            } else if (avgSentenceLength > 25 && avgSentenceLength <= 30) {
+                pacingScore = 5;
+            }
+            breakdown.technical += pacingScore;
+            if (pacingScore < 10 && avgSentenceLength > 0) {
+                if (avgSentenceLength < 10) {
+                    recommendations.push('Vary sentence length - add some longer descriptive sentences');
+                } else if (avgSentenceLength > 20) {
+                    recommendations.push('Break up long sentences for better readability');
+                }
+            }
+            
+            let dialogueScore = 0;
+            if (dialogueRatio >= 0.05 && dialogueRatio <= 0.20) {
+                dialogueScore = 10;
+            } else if (dialogueRatio >= 0.02 && dialogueRatio < 0.05) {
+                dialogueScore = 5;
+            } else if (dialogueRatio > 0.20 && dialogueRatio <= 0.30) {
+                dialogueScore = 5;
+            }
+            breakdown.technical += dialogueScore;
+            if (dialogueScore < 10 && content.length > 0) {
+                if (dialogueRatio < 0.05) {
+                    recommendations.push('Add more dialogue (aim for 5-20% of chapter)');
+                } else if (dialogueRatio > 0.20) {
+                    recommendations.push('Balance dialogue with narrative description');
+                }
+            }
+            
+            score = breakdown.structural + breakdown.character + breakdown.technical;
+            
+            return { score, breakdown, recommendations };
+        }
+
+        function renderHealthScore() {
+            const display = document.getElementById('healthScoreDisplay');
+            const breakdown = document.getElementById('healthScoreBreakdown');
+            const metrics = document.getElementById('healthMetrics');
+            const recsPanel = document.getElementById('healthRecommendations');
+            const recsList = document.getElementById('healthRecsList');
+            
+            if (!display || !breakdown || !metrics || !recsPanel || !recsList) return;
+            
+            const result = calculateChapterHealthScore();
+            const score = result.score;
+            const scoreLabel = score >= 80 ? 'Excellent' : score >= 60 ? 'Good' : score >= 40 ? 'Needs Work' : 'Weak';
+            
+            display.innerHTML = `
+                <div class="health-score-number">${score}</div>
+                <div class="health-score-label">${scoreLabel}</div>
+            `;
+            
+            if (score > 0) {
+                breakdown.style.display = 'block';
+                metrics.innerHTML = `
+                    <div class="health-metric">
+                        <span class="health-metric-label">Structural Momentum</span>
+                        <span class="health-metric-value">${result.breakdown.structural}/40</span>
+                    </div>
+                    <div class="health-metric">
+                        <span class="health-metric-label">Character Development</span>
+                        <span class="health-metric-value">${result.breakdown.character}/30</span>
+                    </div>
+                    <div class="health-metric">
+                        <span class="health-metric-label">Technical Execution</span>
+                        <span class="health-metric-value">${result.breakdown.technical}/30</span>
+                    </div>
+                `;
+            } else {
+                breakdown.style.display = 'none';
+            }
+            
+            if (result.recommendations.length > 0) {
+                recsPanel.style.display = 'block';
+                recsList.innerHTML = result.recommendations.map(rec => 
+                    `<div class="health-recommendation">${rec}</div>`
+                ).join('');
+            } else {
+                recsPanel.style.display = 'none';
+            }
+        }
+
+        function migrateInsights(fromKey, toKey) {
+            if (fromKey === toKey) return;
+            if (sceneTrackerData[fromKey]) {
+                sceneTrackerData[toKey] = (sceneTrackerData[toKey] || []).concat(sceneTrackerData[fromKey]);
+                delete sceneTrackerData[fromKey];
+                saveSceneTracker();
+            }
+            if (characterHeatmapData[fromKey]) {
+                characterHeatmapData[toKey] = (characterHeatmapData[toKey] || []).concat(characterHeatmapData[fromKey]);
+                delete characterHeatmapData[fromKey];
+                saveCharacterHeatmap();
+            }
+        }
+
+        // Chat functions
+        function handleChatKeypress(event) {
+            if (event.key === 'Enter') {
+                sendChatMessage();
+            }
+        }
+
+        // ── API Key management ────────────────────────────────────────────────
+        function getApiKey() {
+            return localStorage.getItem('novelAssistantApiKey') || '';
+        }
+
+        function saveApiKey() {
+            const input = document.getElementById('apiKeyInput');
+            if (!input) return;
+            const key = input.value.trim();
+            if (!key) { alert('Please enter an API key.'); return; }
+            localStorage.setItem('novelAssistantApiKey', key);
+            input.value = '';
+            updateApiKeyStatus();
+            addChatMessage('AI Assistant', 'API key saved! I\'m now powered by Claude. Ask me anything about your story.');
+        }
+
+        function clearApiKey() {
+            localStorage.removeItem('novelAssistantApiKey');
+            const input = document.getElementById('apiKeyInput');
+            if (input) input.value = '';
+            updateApiKeyStatus();
+        }
+
+        function updateApiKeyStatus() {
+            const el = document.getElementById('apiKeyStatus');
+            if (!el) return;
+            const key = getApiKey();
+            if (key) {
+                const masked = key.slice(0, 10) + '...' + key.slice(-4);
+                el.textContent = 'Key saved: ' + masked;
+                el.style.color = '#48bb78';
+            } else {
+                el.textContent = 'Add your Anthropic API key above to enable AI responses.';
+                el.style.color = '';
+            }
+        }
+
+        // ── System prompt builder ─────────────────────────────────────────────
+        function buildSystemPrompt() {
+            const book = getCurrentBook();
+            const bookTitle = book ? book.title : 'Untitled';
+            const chapterTitle = currentChapter !== null && chapters[currentChapter]
+                ? chapters[currentChapter].title
+                : 'New Chapter (unsaved)';
+            const genre = currentGenre || 'general';
+            const key = getChapterKey();
+            const sceneBeats = (sceneTrackerData[key] || []).slice(-3);
+            const characterBeats = (characterHeatmapData[key] || []).slice(-3);
+
+            // First ~800 words of the chapter
+            const words = getEditorText().trim().split(/\s+/).filter(Boolean);
+            const contentSnippet = words.slice(0, 800).join(' ');
+
+            let beatsContext = '';
+            if (sceneBeats.length > 0) {
+                beatsContext += '\n\nScene Trajectory (last ' + sceneBeats.length + ' beat' + (sceneBeats.length > 1 ? 's' : '') + '):\n';
+                sceneBeats.forEach(function(beat, i) {
+                    beatsContext += (i + 1) + '. Goal: ' + beat.goal + ' | Obstacle: ' + beat.obstacle + ' | Outcome: ' + beat.outcome + '\n';
+                });
+            }
+            if (characterBeats.length > 0) {
+                beatsContext += '\nCharacter Arc (last ' + characterBeats.length + ' beat' + (characterBeats.length > 1 ? 's' : '') + '):\n';
+                characterBeats.forEach(function(beat, i) {
+                    const stateLabel = beat.state === 'progress' ? 'Progress' : beat.state === 'regress' ? 'Setback' : 'Holding pattern';
+                    beatsContext += (i + 1) + '. ' + beat.name + ': ' + stateLabel + (beat.notes ? ' — ' + beat.notes : '') + '\n';
+                });
+            }
+
+            let prompt = 'You are a developmental editor and writing coach. The writer is working on "' + bookTitle + '", a ' + genre + ' novel. Current chapter: "' + chapterTitle + '".';
+
+            if (beatsContext) {
+                prompt += '\n\nHere is context from their tracking data:' + beatsContext;
+            }
+
+            if (contentSnippet) {
+                prompt += '\n\nHere is the current chapter opening (first ~800 words):\n\n' + contentSnippet;
+            }
+
+            prompt += '\n\nHelp them with craft, structure, character, and story questions. Be specific, actionable, and encouraging. Keep responses focused and practical.';
+
+            return prompt;
+        }
+
+        // ── Claude API call ───────────────────────────────────────────────────
+        async function callClaudeAPI(userMessage) {
+            const apiKey = getApiKey();
+            if (!apiKey) return null;
+
+            const response = await fetch('https://api.anthropic.com/v1/messages', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'x-api-key': apiKey,
+                    'anthropic-version': '2023-06-01',
+                    'anthropic-dangerous-direct-browser-access': 'true'
+                },
+                body: JSON.stringify({
+                    model: 'claude-sonnet-4-20250514',
+                    max_tokens: 1000,
+                    system: buildSystemPrompt(),
+                    messages: [{ role: 'user', content: userMessage }]
+                })
+            });
+
+            if (!response.ok) {
+                let errMsg = 'API request failed (' + response.status + ')';
+                try {
+                    const errData = await response.json();
+                    if (errData.error && errData.error.message) errMsg = errData.error.message;
+                } catch (_) {}
+                throw new Error(errMsg);
+            }
+
+            const data = await response.json();
+            return (data.content && data.content[0]) ? data.content[0].text : '';
+        }
+
+        // ── Chat functions ────────────────────────────────────────────────────
+        async function sendChatMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            addChatMessage('You', message);
+            input.value = '';
+
+            if (getApiKey()) {
+                const thinkingEl = addChatMessageReturning('AI Assistant', '<em>Thinking...</em>');
+                try {
+                    const response = await callClaudeAPI(message);
+                    thinkingEl.innerHTML = '<strong>AI Assistant:</strong> ' + (response ? response.replace(/\n/g, '<br>') : 'No response received.');
+                    document.getElementById('chatSection').scrollTop = document.getElementById('chatSection').scrollHeight;
+                } catch (err) {
+                    thinkingEl.innerHTML = '<strong>AI Assistant:</strong> <span style="color:#e53e3e">Error: ' + escapeHtml(err.message) + '</span>';
+                }
+            } else {
+                setTimeout(function() {
+                    addChatMessage('AI Assistant', generateSmartAIResponse(message));
+                }, 1000);
+            }
+        }
+
+        async function aiQuickAction(type) {
+            const labels = {
+                summary: 'Summarize this chapter for me',
+                style: 'Run a style check on my writing',
+                repeat: 'Find repeated phrases in my chapter',
+                next: 'Suggest the next story beat for my chapter',
+                consistency: 'Check for consistency issues in my chapter'
+            };
+            const userMessage = labels[type] || 'Quick action';
+            addChatMessage('You', userMessage);
+
+            if (getApiKey()) {
+                const thinkingEl = addChatMessageReturning('AI Assistant', '<em>Thinking...</em>');
+                try {
+                    const response = await callClaudeAPI(userMessage);
+                    thinkingEl.innerHTML = '<strong>AI Assistant:</strong> ' + (response ? response.replace(/\n/g, '<br>') : 'No response received.');
+                    document.getElementById('chatSection').scrollTop = document.getElementById('chatSection').scrollHeight;
+                } catch (err) {
+                    thinkingEl.innerHTML = '<strong>AI Assistant:</strong> <span style="color:#e53e3e">Error: ' + escapeHtml(err.message) + '</span>';
+                }
+            } else {
+                setTimeout(function() {
+                    addChatMessage('AI Assistant', buildQuickActionResponse(type));
+                }, 300);
+            }
+        }
+
+        function getCurrentChapterContent() {
+            return getEditorText().trim();
+        }
+
+        function buildQuickActionResponse(type) {
+            const content = getCurrentChapterContent();
+            if (!content) {
+                return 'Write a few paragraphs first so I can analyze your draft.';
+            }
+            if (type === 'summary') {
+                return summarizeChapter(content);
+            }
+            if (type === 'style') {
+                return buildStyleFeedback(content);
+            }
+            if (type === 'repeat') {
+                return findRepetition(content);
+            }
+            if (type === 'next') {
+                const genreSelect = document.getElementById('genreSelect');
+                const genre = genreSelect ? genreSelect.value : 'general';
+                const key = getChapterKey();
+                const sceneBeats = sceneTrackerData[key] || [];
+                const characterBeats = characterHeatmapData[key] || [];
+                const suggestions = buildChapterDirectionSuggestions(content, genre, sceneBeats, characterBeats);
+                return 'Here are focused next-beat options:<br>' + suggestions.map(s => '<strong>' + s.title + ':</strong> ' + s.detail).join('<br>');
+            }
+            if (type === 'consistency') {
+                return checkConsistencySignals(content);
+            }
+            return 'Tell me what you need and I will help.';
+        }
+
+        function summarizeChapter(content) {
+            const normalized = content.replace(/\s+/g, ' ').trim();
+            const sentences = normalized.match(/[^.!?]+[.!?]+|[^.!?]+$/g) || [];
+            const cleaned = sentences.map(s => s.trim()).filter(Boolean);
+            if (cleaned.length === 0) return 'I could not extract a summary yet. Add more sentences.';
+            if (cleaned.length <= 3) {
+                return '<strong>Chapter summary:</strong><br>' + cleaned.map(sentence => escapeHtml(sentence)).join('<br>');
+            }
+            const picks = [];
+            const addPick = (idx) => {
+                if (idx >= 0 && idx < cleaned.length) {
+                    const sentence = cleaned[idx];
+                    if (!picks.includes(sentence)) picks.push(sentence);
+                }
+            };
+            addPick(0);
+            addPick(Math.floor(cleaned.length / 3));
+            addPick(Math.floor((2 * cleaned.length) / 3));
+            addPick(cleaned.length - 1);
+            const dialogueIndex = cleaned.findIndex(s => s.includes('"'));
+            if (dialogueIndex >= 0) addPick(dialogueIndex);
+            const limited = picks.slice(0, 5);
+            return '<strong>Chapter summary (key beats):</strong><br>' + limited.map((sentence, index) => (index + 1) + '. ' + escapeHtml(sentence)).join('<br>');
+        }
+
+        function analyzeWritingStyle(content) {
+            const sentences = content.split(/[.!?]+/).filter(s => s.trim());
+            const words = content.split(/\s+/).filter(Boolean);
+            const longSentences = sentences.filter(s => s.split(/\s+/).length > 25);
+            const adverbs = words.filter(w => w.toLowerCase().endsWith('ly'));
+            const passive = (content.match(/\b(?:was|were|is|are|been|being|be)\b\s+\w+ed\b/gi) || []);
+            return {
+                wordCount: words.length,
+                sentenceCount: sentences.length,
+                longSentenceCount: longSentences.length,
+                adverbCount: adverbs.length,
+                passiveCount: passive.length
+            };
+        }
+
+        function buildStyleFeedback(content) {
+            const metrics = analyzeWritingStyle(content);
+            const feedback = [];
+            if (metrics.longSentenceCount > 2) {
+                feedback.push('You have ' + metrics.longSentenceCount + ' long sentences. Consider breaking a few for clarity.');
+            }
+            if (metrics.adverbCount > Math.max(5, metrics.wordCount * 0.02)) {
+                feedback.push('Adverb use is noticeable (' + metrics.adverbCount + '). Try replacing a few with stronger verbs.');
+            }
+            if (metrics.passiveCount > 0) {
+                feedback.push('Passive voice detected (' + metrics.passiveCount + ' instances). Flip some sentences to active voice.');
+            }
+            if (feedback.length === 0) {
+                feedback.push('Style looks balanced. Keep the sentence variety and clarity.');
+            }
+            return '<strong>Style check:</strong><br>' + feedback.map(item => '- ' + item).join('<br>');
+        }
+
+        function findRepetition(content) {
+            const words = content.toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(Boolean);
+            const phraseCounts = {};
+            for (let i = 0; i < words.length - 2; i++) {
+                const phrase = words.slice(i, i + 3).join(' ');
+                phraseCounts[phrase] = (phraseCounts[phrase] || 0) + 1;
+            }
+            const repeats = Object.entries(phraseCounts).filter(([_, count]) => count >= 3).slice(0, 5);
+            if (repeats.length === 0) {
+                return 'No strong repetition detected in 3-word phrases. Nice variety.';
+            }
+            return '<strong>Repeated phrases:</strong><br>' + repeats.map(([phrase, count]) => '"' + phrase + '" (' + count + 'x)').join('<br>');
+        }
+
+        function extractProperNouns(content) {
+            const words = content.split(/\s+/);
+            const candidates = words.filter(word => /^[A-Z][a-z]+/.test(word.replace(/[^A-Za-z]/g, '')));
+            const unique = new Set(candidates.map(word => word.replace(/[^A-Za-z]/g, '')));
+            return Array.from(unique).filter(name => name.length > 2);
+        }
+
+        function checkConsistencySignals(content) {
+            const key = getChapterKey();
+            const chapterRoster = (characterHeatmapData[key] || []).map(b => b.name.toLowerCase());
+            const bookRoster = currentBookId && characterRoster[currentBookId]
+                ? characterRoster[currentBookId].map(c => c.name.toLowerCase())
+                : [];
+            const fullRoster = new Set([...chapterRoster, ...bookRoster]);
+            const properNouns = extractProperNouns(content);
+            const unmatched = properNouns.filter(name => !fullRoster.has(name.toLowerCase()));
+            let response = '<strong>Consistency hints:</strong><br>';
+            if (fullRoster.size === 0) {
+                response += 'No characters tracked yet. Add some in the Character Roster or Arc Heatmap for stronger checks.';
+            } else if (unmatched.length > 0) {
+                response += 'Names not in your roster: ' + unmatched.slice(0, 6).join(', ') + '. Consider adding them if they are important.';
+            } else {
+                response += 'Character names in this chapter align with your tracked roster.';
+            }
+            return response;
+        }
+
+        function buildContextSummary(content, sceneBeats, characterBeats) {
+            const summary = [];
+            if (content) {
+                const wordCount = content.split(/\s+/).filter(Boolean).length;
+                summary.push(wordCount + ' words in current chapter');
+            }
+            if (sceneBeats.length > 0) {
+                const last = sceneBeats[sceneBeats.length - 1];
+                summary.push('Last scene goal: ' + last.goal);
+            }
+            if (characterBeats.length > 0) {
+                const lastChar = characterBeats[characterBeats.length - 1];
+                summary.push('Last character beat: ' + lastChar.name + ' (' + lastChar.state + ')');
+            }
+            return summary.length ? summary.join(' • ') : 'No chapter context captured yet.';
+        }
+
+
+        function generateSmartAIResponse(message) {
+            const lowerMessage = message.toLowerCase();
+            const containsAny = keywords => keywords.some(word => lowerMessage.includes(word));
+            const containsAll = keywords => keywords.every(word => lowerMessage.includes(word));
+            const content = getCurrentChapterContent();
+            const hasContent = !!content;
+            const key = getChapterKey();
+            const sceneBeats = sceneTrackerData[key] || [];
+            const characterBeats = characterHeatmapData[key] || [];
+            const contextSummary = buildContextSummary(content, sceneBeats, characterBeats);
+
+            if (containsAny(['summary', 'summarize'])) {
+                return hasContent ? summarizeChapter(content) : 'Write a bit more so I can summarize it.';
+            }
+
+            if (containsAny(['style', 'clarity', 'voice'])) {
+                return hasContent ? buildStyleFeedback(content) : 'Add a paragraph and I will run a style check.';
+            }
+
+            if (containsAny(['repeat', 'repetition'])) {
+                return hasContent ? findRepetition(content) : 'Add a paragraph and I will look for repetition.';
+            }
+
+            if (containsAny(['consistency', 'continuity', 'inconsistent'])) {
+                return hasContent ? checkConsistencySignals(content) : 'Add a paragraph and track a character beat for consistency checks.';
+            }
+
+            if (containsAny(['next', 'direction', 'beat', 'what happens'])) {
+                if (!hasContent) {
+                    return 'Write a bit more so I can suggest the next beat.';
+                }
+                const genreSelect = document.getElementById('genreSelect');
+                const genre = genreSelect ? genreSelect.value : 'general';
+                const suggestions = buildChapterDirectionSuggestions(content, genre, sceneBeats, characterBeats);
+                return '<strong>Next-beat options:</strong><br>' + suggestions.map(s => '<strong>' + s.title + ':</strong> ' + s.detail).join('<br>');
+            }
+            
+            if (lowerMessage.includes('prologue')) {
+                return `<strong>How to craft an effective prologue:</strong><br>
+                <ul>
+                    <li><strong>Hook fast:</strong> Open with conflict, a striking image, or a puzzle that mirrors the main story.</li>
+                    <li><strong>Deliver only essentials:</strong> Reveal information the reader truly needs before chapter one.</li>
+                    <li><strong>Show the promise:</strong> Hint at genre, tone, or stakes the novel will later pay off.</li>
+                    <li><strong>Keep it tight:</strong> One to three focused scenes written in the same voice as the rest of the book.</li>
+                </ul>
+                Ask yourself what new insight this prologue gives the reader and where it will echo later. Share a snippet and I can help you pressure-test it.`;
+            }
+            
+            if (lowerMessage.includes('setting') && containsAny(['description', 'example', 'vivid', 'atmosphere', 'world'])) {
+                return `<strong>Strengthen your setting description:</strong><br>
+                <ul>
+                    <li><strong>Specific nouns:</strong> Swap "tree" for "wind-twisted pine coated in salt."</li>
+                    <li><strong>Sensory layering:</strong> Sight + sound + texture beats sight alone.</li>
+                    <li><strong>Character lens:</strong> Filter the scene through how your POV character feels about it.</li>
+                    <li><strong>Active verbs:</strong> Let the setting move (fog curls, neon flickers, floorboards complain).</li>
+                </ul>
+                Revise one paragraph using those four checks, then read it aloud to hear the rhythm.`;
+            }
+            
+            if (lowerMessage.includes('character') && containsAny(['development', 'motivation', 'arc', 'goal', 'flaw'])) {
+                return `<strong>Build a compelling character arc:</strong><br>
+                <ol>
+                    <li><strong>Goal vs. need:</strong> What do they want on page one, and what deeper change do they resist?</li>
+                    <li><strong>Pressure points:</strong> Draft scenes that force them to choose between comfort and growth.</li>
+                    <li><strong>Visible change:</strong> Show how the climax decision proves they have evolved.</li>
+                </ol>
+                Bonus tip: Write a one-line belief they start with and rewrite it after the climax to confirm the arc.`;
+            }
+            
+            if (containsAny(['dialogue', 'conversation'])) {
+                return `<strong>Sharper dialogue checklist:</strong><br>
+                <ul>
+                    <li><strong>Intent:</strong> Give each speaker a goal for the scene.</li>
+                    <li><strong>Voice:</strong> Vocabulary and rhythm should hint at who is speaking even without tags.</li>
+                    <li><strong>Subtext:</strong> Use beats or actions to show what they are not saying.</li>
+                    <li><strong>Trim filler:</strong> Cut greetings or chit-chat unless it reveals character.</li>
+                </ul>
+                Try interleaving short action beats (e.g., "She tightened her grip on the mug...") to layer emotion without adverbs.`;
+            }
+            
+            if (containsAny(['plot', 'structure', 'story arc', 'outline'])) {
+                return `<strong>Quick plot pulse check:</strong><br>
+                <ol>
+                    <li><strong>Setup (0-25%):</strong> Introduce the normal world and the disruption.</li>
+                    <li><strong>Escalation (25-75%):</strong> Each obstacle should cost your protagonist something tangible.</li>
+                    <li><strong>Climax (75%+):</strong> Force them to face their core flaw and the antagonistic force simultaneously.</li>
+                </ol>
+                If pacing drags, list your scenes and note the consequence of each-no consequence usually means revise or cut.`;
+            }
+            
+            if (containsAny(['is my', 'good', 'does this work', 'feedback', 'improve']) && containsAny(['chapter', 'scene', 'writing', 'story', 'prologue'])) {
+                return `<strong>Self-assessment framework:</strong><br>
+                <ul>
+                    <li><strong>Clarity:</strong> Can a new reader summarise what changed?</li>
+                    <li><strong>Emotion:</strong> Does every beat steer the reader toward one feeling?</li>
+                    <li><strong>Momentum:</strong> End with a decision, new obstacle, or unanswered question.</li>
+                    <li><strong>Voice:</strong> Read aloud to catch flat or meandering sentences.</li>
+                </ul>
+                Note which box feels weakest and I can help you strengthen that specific layer.`;
+            }
+            
+            if (containsAny(['pacing', 'fast', 'slow', 'tension'])) {
+                return `<strong>Tune your pacing:</strong><br>
+                <ul>
+                    <li><strong>Sentence mix:</strong> Alternate compact lines for urgency with longer reflective ones.</li>
+                    <li><strong>Scene purpose:</strong> Note the objective-if two scenes share it, merge them.</li>
+                    <li><strong>Micro-tension:</strong> Make sure each scene leaves at least one question hanging.</li>
+                </ul>
+                Mark the final paragraph with the question it leaves the reader-if none exists, add a turn.`;
+            }
+            
+            return `<strong>Let's get specific.</strong><br>
+            Tell me which layer you want to tackle:<br>
+            <ul>
+                <li><strong>Idea/plot:</strong> What changes, and who drives it?</li>
+                <li><strong>Character:</strong> Goal, flaw, and the moment they must choose.</li>
+                <li><strong>Scene craft:</strong> Setting, dialogue, pacing, or tension.</li>
+                <li><strong>Line edit:</strong> Voice, imagery, sentence flow.</li>
+            </ul>
+            Context: ${escapeHtml(contextSummary)}<br>
+            Share a line or describe the issue, and I'll give you targeted steps or examples.`;
+        }
+
+        // ── Revision Mode ─────────────────────────────────────────────────────
+        function toggleRevisionMode() {
+            revisionModeActive = !revisionModeActive;
+            const btn = document.getElementById('revisionModeBtn');
+            const editor = getEditor();
+            const panel = document.getElementById('revisionSummaryPanel');
+
+            if (btn) btn.classList.toggle('btn-revision-active', revisionModeActive);
+            if (editor) editor.classList.toggle('revision-mode-active', revisionModeActive);
+            if (panel) panel.classList.toggle('visible', revisionModeActive);
+
+            if (!revisionModeActive) {
+                hideRevisionToolbar();
+            } else {
+                updateRevisionSummary();
+            }
+        }
+
+        function hideRevisionToolbar() {
+            const toolbar = document.getElementById('revisionTagToolbar');
+            if (toolbar) toolbar.classList.remove('visible');
+        }
+
+        function showRevisionToolbar(x, y) {
+            const toolbar = document.getElementById('revisionTagToolbar');
+            if (!toolbar) return;
+            // Keep toolbar inside viewport
+            const margin = 8;
+            const tw = toolbar.offsetWidth || 220;
+            const th = toolbar.offsetHeight || 38;
+            const vw = window.innerWidth;
+            const vh = window.innerHeight;
+            const left = Math.min(x, vw - tw - margin);
+            const top  = y - th - 6 < margin ? y + 6 : y - th - 6;
+            toolbar.style.left = Math.max(margin, left) + 'px';
+            toolbar.style.top  = Math.max(margin, top)  + 'px';
+            toolbar.classList.add('visible');
+        }
+
+        function applyRevisionTag(tagType) {
+            const sel = window.getSelection();
+            if (!sel || sel.rangeCount === 0 || sel.isCollapsed) return;
+
+            const range = sel.getRangeAt(0);
+            const ed = getEditor();
+            if (!ed || !ed.contains(range.commonAncestorContainer)) return;
+
+            // If the entire selection is already wrapped in this tag class, remove it
+            const existing = getSelectionSpan(range, 'revision-' + tagType);
+            if (existing) {
+                // Unwrap: replace span with its children
+                const parent = existing.parentNode;
+                while (existing.firstChild) parent.insertBefore(existing.firstChild, existing);
+                parent.removeChild(existing);
+            } else {
+                // Remove any existing revision spans that overlap the selection first
+                ['draft', 'revised', 'final'].forEach(function(t) {
+                    const span = getSelectionSpan(range, 'revision-' + t);
+                    if (span) {
+                        const p = span.parentNode;
+                        while (span.firstChild) p.insertBefore(span.firstChild, span);
+                        p.removeChild(span);
+                    }
+                });
+                // Re-fetch range after DOM changes
+                const freshSel = window.getSelection();
+                if (!freshSel || freshSel.rangeCount === 0 || freshSel.isCollapsed) return;
+                const freshRange = freshSel.getRangeAt(0);
+                const span = document.createElement('span');
+                span.className = 'revision-' + tagType;
+                try {
+                    freshRange.surroundContents(span);
+                } catch (e) {
+                    // surroundContents fails if range spans multiple block elements;
+                    // fall back to extractContents + insertNode
+                    const frag = freshRange.extractContents();
+                    span.appendChild(frag);
+                    freshRange.insertNode(span);
+                }
+            }
+
+            sel.removeAllRanges();
+            hideRevisionToolbar();
+            updateRevisionSummary();
+            updateStats();
+        }
+
+        // Returns the span element if the range's common ancestor is (or is inside) a span
+        // with the given class, and the selection appears to cover it fully.
+        function getSelectionSpan(range, cls) {
+            let node = range.commonAncestorContainer;
+            if (node.nodeType === Node.TEXT_NODE) node = node.parentNode;
+            // Walk up to find a matching span
+            while (node && node !== getEditor()) {
+                if (node.nodeType === Node.ELEMENT_NODE && node.classList && node.classList.contains(cls)) {
+                    return node;
+                }
+                node = node.parentNode;
+            }
+            return null;
+        }
+
+        function countWordsInSpans(cls) {
+            const ed = getEditor();
+            if (!ed) return 0;
+            let total = 0;
+            ed.querySelectorAll('.' + cls).forEach(function(span) {
+                const text = (span.innerText || span.textContent || '').trim();
+                if (text) total += text.split(/\s+/).length;
+            });
+            return total;
+        }
+
+        function updateRevisionSummary() {
+            if (!revisionModeActive) return;
+            const draft   = countWordsInSpans('revision-draft');
+            const revised = countWordsInSpans('revision-revised');
+            const final   = countWordsInSpans('revision-final');
+            const total   = draft + revised + final;
+            const allWords = (() => {
+                const t = getEditorText().trim();
+                return t ? t.split(/\s+/).length : 0;
+            })();
+            const pct = allWords > 0 ? Math.min(100, Math.round((final / allWords) * 100)) : 0;
+
+            const set = function(id, val) {
+                const el = document.getElementById(id);
+                if (el) el.textContent = val;
+            };
+            set('revTotalWords',   total);
+            set('revDraftWords',   draft);
+            set('revRevisedWords', revised);
+            set('revFinalWords',   final);
+
+            const fill  = document.getElementById('revBarFill');
+            const label = document.getElementById('revBarLabel');
+            if (fill)  fill.style.width = pct + '%';
+            if (label) label.textContent = pct + '% marked Final';
+        }
+
+        function clearRevisionTags() {
+            const ed = getEditor();
+            if (!ed) return;
+            ed.querySelectorAll('.revision-draft, .revision-revised, .revision-final').forEach(function(span) {
+                const parent = span.parentNode;
+                while (span.firstChild) parent.insertBefore(span.firstChild, span);
+                parent.removeChild(span);
+            });
+            updateStats();
+            updateRevisionSummary();
+        }
+
+        // Show/hide the floating toolbar on selection change inside the editor
+        function handleEditorSelectionForRevision() {
+            if (!revisionModeActive) return;
+            const sel = window.getSelection();
+            if (!sel || sel.isCollapsed || sel.rangeCount === 0) {
+                hideRevisionToolbar();
+                return;
+            }
+            const range = sel.getRangeAt(0);
+            const ed = getEditor();
+            if (!ed || !ed.contains(range.commonAncestorContainer)) {
+                hideRevisionToolbar();
+                return;
+            }
+            // Position above the selection
+            const rect = range.getBoundingClientRect();
+            showRevisionToolbar(rect.left + rect.width / 2 - 110, rect.top + window.scrollY);
+        }
+        // ─────────────────────────────────────────────────────────────────────
+
+        function addChatMessageReturning(sender, message) {
+            const chatSection = document.getElementById('chatSection');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = 'chat-message';
+            messageDiv.innerHTML = '<strong>' + sender + ':</strong> ' + message;
+            chatSection.appendChild(messageDiv);
+            chatSection.scrollTop = chatSection.scrollHeight;
+            return messageDiv;
+        }
+
+        function addChatMessage(sender, message) {
+            addChatMessageReturning(sender, message);
+        }
+
+        function toggleDarkMode() {
+            appSettings.darkMode = !appSettings.darkMode;
+            applyViewSettings();
+            saveSettings();
+        }
+
+        function toggleFocusMode() {
+            appSettings.focusMode = !appSettings.focusMode;
+            applyViewSettings();
+            saveSettings();
+        }
+
+        function applyViewSettings() {
+            document.body.classList.toggle('dark-mode', !!appSettings.darkMode);
+            document.body.classList.toggle('focus-mode', !!appSettings.focusMode);
+        }
+
+        function startSessionTimer() {
+            sessionStartTime = Date.now();
+            if (sessionTimerInterval) clearInterval(sessionTimerInterval);
+            sessionTimerInterval = setInterval(updateSessionTimer, 1000);
+            updateSessionTimer();
+        }
+
+        function updateSessionTimer() {
+            const elapsed = Math.floor((Date.now() - sessionStartTime) / 1000);
+            const h = String(Math.floor(elapsed / 3600)).padStart(2, '0');
+            const m = String(Math.floor((elapsed % 3600) / 60)).padStart(2, '0');
+            const s = String(elapsed % 60).padStart(2, '0');
+            const el = document.getElementById('sessionTimer');
+            if (el) el.textContent = h + ':' + m + ':' + s;
+        }
+
+        function startAutosave() {
+            if (autosaveInterval) clearInterval(autosaveInterval);
+            lastAutosaveContent = getEditorHTML();
+            autosaveInterval = setInterval(runAutosave, 60000);
+        }
+
+        function runAutosave() {
+            if (!getEditor()) return;
+            const html = getEditorHTML();
+            const text = getEditorText().trim();
+            if (!text || html === lastAutosaveContent) return;
+            lastAutosaveContent = html;
+            if (currentChapter !== null && chapters[currentChapter]) {
+                chapters[currentChapter].content = html;
+                chapters[currentChapter].wordCount = text.split(/\s+/).length;
+                chapters[currentChapter].updatedAt = new Date().toISOString();
+                const book = getCurrentBook();
+                if (book) book.updatedAt = new Date().toISOString();
+                saveChapters();
+                createChapterSnapshot(chapters[currentChapter]);
+                const indicator = document.getElementById('autosaveIndicator');
+                if (indicator) {
+                    indicator.textContent = 'Autosaved at ' + new Date().toLocaleTimeString();
+                    setTimeout(() => { indicator.textContent = ''; }, 5000);
+                }
+                loadChapters();
+                document.getElementById('chapterSelect').value = currentChapter;
+            }
+        }
+
+        function setWordGoal() {
+            const input = document.getElementById('wordGoalInput');
+            const goal = parseInt(input.value);
+            if (!goal || goal <= 0) {
+                alert('Enter a positive number.');
+                return;
+            }
+            appSettings.wordGoal = goal;
+            saveSettings();
+            updateGoalBar();
+        }
+
+        function clearWordGoal() {
+            delete appSettings.wordGoal;
+            saveSettings();
+            const input = document.getElementById('wordGoalInput');
+            if (input) input.value = '';
+            updateGoalBar();
+        }
+
+        function updateGoalBar() {
+            const fill = document.getElementById('goalBarFill');
+            const label = document.getElementById('goalBarLabel');
+            if (!fill || !label) return;
+            const goal = appSettings.wordGoal;
+            if (!goal) {
+                fill.style.width = '0%';
+                label.textContent = 'No goal set';
+                return;
+            }
+            const content = getEditorText().trim();
+            const words = content ? content.split(/\s+/).length : 0;
+            const pct = Math.min(100, Math.round((words / goal) * 100));
+            fill.style.width = pct + '%';
+            label.textContent = words + ' / ' + goal + ' words (' + pct + '%)';
+        }
+
+        function updateBookStats() {
+            const totalWords = chapters.reduce((sum, ch) => sum + (ch.wordCount || (ch.content ? ch.content.split(/\s+/).length : 0)), 0);
+            const chapterCount = chapters.length;
+            const avgChapter = chapterCount > 0 ? Math.round(totalWords / chapterCount) : 0;
+            const readTime = Math.ceil(totalWords / 200);
+            const el = (id, val) => { const e = document.getElementById(id); if (e) e.textContent = val; };
+            el('bookTotalWords', totalWords.toLocaleString());
+            el('bookChapterCount', chapterCount);
+            el('bookAvgChapter', avgChapter.toLocaleString());
+            el('bookReadTime', readTime);
+        }
+
+        function toggleFindReplace() {
+            const bar = document.getElementById('findReplaceBar');
+            if (!bar) return;
+            bar.classList.toggle('visible');
+            if (bar.classList.contains('visible')) {
+                document.getElementById('findInput').focus();
+            } else {
+                findMatchPositions = [];
+                findMatchIndex = -1;
+                document.getElementById('matchCount').textContent = '';
+            }
+        }
+
+        // Returns {node, offset} for a character position in the editor's plain text
+        function getTextNodeAtOffset(container, targetOffset) {
+            let current = 0;
+            const walker = document.createTreeWalker(container, NodeFilter.SHOW_TEXT);
+            let node = walker.nextNode();
+            while (node) {
+                const len = node.textContent.length;
+                if (current + len >= targetOffset) {
+                    return { node: node, offset: targetOffset - current };
+                }
+                current += len;
+                node = walker.nextNode();
+            }
+            return null;
+        }
+
+        // Selects a range in the contenteditable editor by plain-text character offsets
+        function selectRangeInEditor(startOffset, length) {
+            const ed = getEditor();
+            if (!ed) return;
+            const start = getTextNodeAtOffset(ed, startOffset);
+            const end = getTextNodeAtOffset(ed, startOffset + length);
+            if (!start || !end) return;
+            const range = document.createRange();
+            range.setStart(start.node, start.offset);
+            range.setEnd(end.node, end.offset);
+            const sel = window.getSelection();
+            sel.removeAllRanges();
+            sel.addRange(range);
+            ed.focus();
+            if (start.node.parentElement) {
+                start.node.parentElement.scrollIntoView({ block: 'nearest' });
+            }
+        }
+
+        function findInEditor() {
+            const query = document.getElementById('findInput').value;
+            const countEl = document.getElementById('matchCount');
+            if (!query) {
+                findMatchPositions = [];
+                findMatchIndex = -1;
+                if (countEl) countEl.textContent = '';
+                return;
+            }
+            const content = getEditorText().toLowerCase();
+            const lowerQuery = query.toLowerCase();
+            findMatchPositions = [];
+            let pos = content.indexOf(lowerQuery);
+            while (pos !== -1) {
+                findMatchPositions.push(pos);
+                pos = content.indexOf(lowerQuery, pos + 1);
+            }
+            findMatchIndex = findMatchPositions.length > 0 ? 0 : -1;
+            if (countEl) countEl.textContent = findMatchPositions.length + ' match' + (findMatchPositions.length === 1 ? '' : 'es');
+            if (findMatchIndex >= 0) selectFindMatch();
+        }
+
+        function selectFindMatch() {
+            const query = document.getElementById('findInput').value;
+            if (findMatchIndex < 0 || !query) return;
+            selectRangeInEditor(findMatchPositions[findMatchIndex], query.length);
+        }
+
+        function findNext() {
+            if (findMatchPositions.length === 0) return;
+            findMatchIndex = (findMatchIndex + 1) % findMatchPositions.length;
+            selectFindMatch();
+        }
+
+        function findPrev() {
+            if (findMatchPositions.length === 0) return;
+            findMatchIndex = (findMatchIndex - 1 + findMatchPositions.length) % findMatchPositions.length;
+            selectFindMatch();
+        }
+
+        function replaceOne() {
+            const findVal = document.getElementById('findInput').value;
+            const replaceVal = document.getElementById('replaceInput').value;
+            if (!findVal || findMatchIndex < 0) return;
+            selectRangeInEditor(findMatchPositions[findMatchIndex], findVal.length);
+            const sel = window.getSelection();
+            if (!sel.rangeCount) return;
+            const range = sel.getRangeAt(0);
+            range.deleteContents();
+            range.insertNode(document.createTextNode(replaceVal));
+            range.collapse(false);
+            sel.removeAllRanges();
+            sel.addRange(range);
+            updateStats();
+            findInEditor();
+        }
+
+        function replaceAll() {
+            const findVal = document.getElementById('findInput').value;
+            const replaceVal = document.getElementById('replaceInput').value;
+            if (!findVal || findMatchPositions.length === 0) return;
+            const confirmed = confirm('Replace all ' + findMatchPositions.length + ' occurrences?');
+            if (!confirmed) return;
+            const ed = getEditor();
+            if (!ed) return;
+            // Walk text nodes and replace occurrences, preserving formatting
+            const walker = document.createTreeWalker(ed, NodeFilter.SHOW_TEXT);
+            const nodes = [];
+            let node = walker.nextNode();
+            while (node) { nodes.push(node); node = walker.nextNode(); }
+            nodes.forEach(function(textNode) {
+                const lower = textNode.textContent.toLowerCase();
+                const lowerFind = findVal.toLowerCase();
+                if (!lower.includes(lowerFind)) return;
+                const frag = document.createDocumentFragment();
+                let remaining = textNode.textContent;
+                let lowerRemaining = remaining.toLowerCase();
+                let idx = lowerRemaining.indexOf(lowerFind);
+                while (idx !== -1) {
+                    frag.appendChild(document.createTextNode(remaining.slice(0, idx)));
+                    frag.appendChild(document.createTextNode(replaceVal));
+                    remaining = remaining.slice(idx + findVal.length);
+                    lowerRemaining = remaining.toLowerCase();
+                    idx = lowerRemaining.indexOf(lowerFind);
+                }
+                frag.appendChild(document.createTextNode(remaining));
+                textNode.parentNode.replaceChild(frag, textNode);
+            });
+            updateStats();
+            findInEditor();
+        }
+
+        function saveBookNotes() {
+            if (!currentBookId) return;
+            const editor = document.getElementById('bookNotesEditor');
+            if (!editor) return;
+            bookNotes[currentBookId] = editor.value;
+            localStorage.setItem('bookNotes', JSON.stringify(bookNotes));
+        }
+
+        function loadBookNotes() {
+            const editor = document.getElementById('bookNotesEditor');
+            if (!editor) return;
+            editor.value = currentBookId && bookNotes[currentBookId] ? bookNotes[currentBookId] : '';
+        }
+
+        function addRosterCharacter() {
+            const nameInput = document.getElementById('rosterNameInput');
+            const roleInput = document.getElementById('rosterRoleInput');
+            const descInput = document.getElementById('rosterDescInput');
+            const name = nameInput ? nameInput.value.trim() : '';
+            const role = roleInput ? roleInput.value.trim() : '';
+            const desc = descInput ? descInput.value.trim() : '';
+            if (!name) { alert('Enter a character name.'); return; }
+            if (!currentBookId) return;
+            if (!characterRoster[currentBookId]) characterRoster[currentBookId] = [];
+            characterRoster[currentBookId].push({ id: generateId(), name, role, desc });
+            localStorage.setItem('characterRoster', JSON.stringify(characterRoster));
+            if (nameInput) nameInput.value = '';
+            if (roleInput) roleInput.value = '';
+            if (descInput) descInput.value = '';
+            renderRoster();
+        }
+
+        function removeRosterCharacter(charId) {
+            if (!currentBookId || !characterRoster[currentBookId]) return;
+            characterRoster[currentBookId] = characterRoster[currentBookId].filter(c => c.id !== charId);
+            localStorage.setItem('characterRoster', JSON.stringify(characterRoster));
+            renderRoster();
+        }
+
+        function renderRoster() {
+            const list = document.getElementById('rosterList');
+            if (!list) return;
+            const roster = currentBookId ? (characterRoster[currentBookId] || []) : [];
+            if (roster.length === 0) {
+                list.innerHTML = '<p class="insight-empty">No characters in roster yet.</p>';
+                return;
+            }
+            list.innerHTML = roster.map(c => `
+                <div class="roster-item">
+                    <header>
+                        <strong>${escapeHtml(c.name)}</strong>
+                        <button class="link-btn" onclick="removeRosterCharacter('${c.id}')">Remove</button>
+                    </header>
+                    ${c.role ? '<div class="roster-role">' + escapeHtml(c.role) + '</div>' : ''}
+                    ${c.desc ? '<div class="roster-desc">' + escapeHtml(c.desc) + '</div>' : ''}
+                </div>
+            `).join('');
+        }
+
+        // Initialize the app
+        function init() {
+            console.log('Initializing Novel Writing Assistant...');
+            updateApiKeyStatus();
+            ensureBooks();
+            books.forEach(book => migrateInsightsToBookAndIds(book));
+            migrateDraftKeys();
+            updateStats();
+            updateBookStats();
+            updateBackupStatus();
+            applyViewSettings();
+            renderBookBar();
+            checkStorageHealth();
+            directionNotes = directionNotes.map(note => note.bookId ? note : { ...note, bookId: currentBookId });
+            localStorage.setItem('directionNotes', JSON.stringify(directionNotes));
+            renderDirectionNotes();
+            loadBookNotes();
+            renderRoster();
+            startSessionTimer();
+            startAutosave();
+
+            const goalInput = document.getElementById('wordGoalInput');
+            if (goalInput && appSettings.wordGoal) goalInput.value = appSettings.wordGoal;
+            updateGoalBar();
+            
+            const genreSelect = document.getElementById('genreSelect');
+            if (genreSelect) {
+                genreSelect.value = appSettings.lastGenre || 'general';
+                currentGenre = genreSelect.value;
+                genreSelect.addEventListener('change', () => {
+                    currentGenre = genreSelect.value;
+                    appSettings.lastGenre = currentGenre;
+                    saveSettings();
+                });
+            }
+            
+            const editor = document.getElementById('editor');
+            if (editor) {
+                editor.addEventListener('input', updateStats);
+                editor.addEventListener('keyup', updateFormatButtons);
+                editor.addEventListener('mouseup', updateFormatButtons);
+                editor.addEventListener('paste', function() {
+                    setTimeout(updateStats, 100);
+                });
+            }
+
+            document.addEventListener('selectionchange', function() {
+                const ed = getEditor();
+                if (ed) {
+                    const sel = window.getSelection();
+                    if (sel && sel.anchorNode && ed.contains(sel.anchorNode)) {
+                        updateFormatButtons();
+                    }
+                }
+                handleEditorSelectionForRevision();
+            });
+
+            // Hide the revision toolbar when clicking outside editor or toolbar
+            document.addEventListener('mousedown', function(e) {
+                const toolbar = document.getElementById('revisionTagToolbar');
+                const ed = getEditor();
+                if (toolbar && !toolbar.contains(e.target) && ed && !ed.contains(e.target)) {
+                    hideRevisionToolbar();
+                }
+            });
+
+            document.addEventListener('keydown', function(e) {
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    saveChapter();
+                }
+                if ((e.ctrlKey || e.metaKey) && e.key === 'h') {
+                    e.preventDefault();
+                    toggleFindReplace();
+                }
+                if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key === 'F') {
+                    e.preventDefault();
+                    toggleFocusMode();
+                }
+                // Ctrl+B / Ctrl+I / Ctrl+U — only when the main editor is focused
+                if ((e.ctrlKey || e.metaKey) && !e.shiftKey && !e.altKey) {
+                    const ed = getEditor();
+                    const editorFocused = ed && (document.activeElement === ed || ed.contains(document.activeElement));
+                    if (editorFocused) {
+                        if (e.key === 'b') { e.preventDefault(); execFmt('bold'); }
+                        if (e.key === 'i') { e.preventDefault(); execFmt('italic'); }
+                        if (e.key === 'u') { e.preventDefault(); execFmt('underline'); }
+                    }
+                }
+                if (e.key === 'Escape') {
+                    if (appSettings.focusMode) {
+                        toggleFocusMode();
+                    }
+                    const bar = document.getElementById('findReplaceBar');
+                    if (bar && bar.classList.contains('visible')) {
+                        toggleFindReplace();
+                    }
+                }
+            });
+        }
+
+        // Initialize when page loads
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
