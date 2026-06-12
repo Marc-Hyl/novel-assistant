@@ -1068,6 +1068,12 @@
             Storage is nearly full. Export your workspace to a JSON file to avoid losing data, then clear old backups.
             <button class="btn btn-small btn-red" onclick="clearOldBackups()" style="margin-left:8px">Clear Old Backups</button>
         </div>
+
+        <div id="persistenceBanner" class="storage-warning">
+            <strong>SAVING FAILED:</strong> browser storage is full and your latest changes are NOT being stored. Export your workspace to a file right now, then clear old backups.
+            <button class="btn btn-small btn-green" onclick="exportWorkspace()" style="margin-left:8px">Export Workspace Now</button>
+            <button class="btn btn-small btn-red" onclick="clearOldBackups()" style="margin-left:8px">Clear Old Backups</button>
+        </div>
         
         <div class="editor-section">
             <div class="main-editor">
@@ -1333,6 +1339,12 @@
                     </div>
                     <input type="file" id="workspaceImportInput" accept="application/json" style="display: none" onchange="handleWorkspaceImport(event)">
                     <p class="insight-empty" id="backupStatus">Last backup: --</p>
+                    <div class="backup-actions" style="margin-top: 8px;">
+                        <button class="btn btn-green btn-small" onclick="linkBackupFile()">Link Backup File</button>
+                        <button class="btn btn-orange btn-small" id="diskBackupReauthBtn" style="display:none" onclick="reauthorizeDiskBackup()">Re-enable</button>
+                    </div>
+                    <p class="insight-empty" id="diskBackupStatus"></p>
+                    <p class="insight-empty" id="storageUsageLabel"></p>
                 </div>
                 
                 <div class="panel">
@@ -1412,8 +1424,14 @@
         let chapterSnapshots = JSON.parse(localStorage.getItem('chapterSnapshots') || '{}');
         let workspaceBackups = JSON.parse(localStorage.getItem('workspaceBackups') || '[]');
         let appSettings = JSON.parse(localStorage.getItem('novelSettings') || '{}');
-        const BACKUP_LIMIT = 5;
-        const SNAPSHOT_LIMIT = 5;
+        const BACKUP_LIMIT = 2;
+        const SNAPSHOT_LIMIT = 3;
+        const AUTOSAVE_SNAPSHOT_INTERVAL = 10 * 60 * 1000;
+        const DISK_BACKUP_MIN_INTERVAL = 60 * 1000;
+        let storageWriteFailed = false;
+        let diskBackupHandle = null;
+        let diskBackupState = 'unlinked';
+        let lastDiskBackupAt = 0;
         let importMode = 'merge';
         let directionNotes = JSON.parse(localStorage.getItem('directionNotes') || '[]');
         let currentDirectionSuggestions = [];
@@ -1486,29 +1504,44 @@
         function safePut(key, value) {
             try {
                 localStorage.setItem(key, value);
+                setPersistenceFailed(false);
                 return true;
             } catch (e) {
                 console.warn('localStorage write failed for key: ' + key, e);
-                trimStorageAndRetry(key, value);
-                return false;
+                const ok = trimStorageAndRetry(key, value);
+                setPersistenceFailed(!ok);
+                return ok;
             }
         }
 
+        function setPersistenceFailed(failed) {
+            if (storageWriteFailed === failed) return;
+            storageWriteFailed = failed;
+            const el = document.getElementById('persistenceBanner');
+            if (el) el.classList.toggle('visible', failed);
+        }
+
         function trimStorageAndRetry(key, value) {
-            if (workspaceBackups.length > 1) {
-                workspaceBackups = workspaceBackups.slice(0, 1);
-                localStorage.setItem('workspaceBackups', JSON.stringify(workspaceBackups));
-            }
-            Object.keys(chapterSnapshots).forEach(k => {
-                if (chapterSnapshots[k] && chapterSnapshots[k].length > 2) {
-                    chapterSnapshots[k] = chapterSnapshots[k].slice(0, 2);
+            try {
+                if (workspaceBackups.length > 1) {
+                    workspaceBackups = workspaceBackups.slice(0, 1);
+                    localStorage.setItem('workspaceBackups', JSON.stringify(workspaceBackups));
                 }
-            });
-            localStorage.setItem('chapterSnapshots', JSON.stringify(chapterSnapshots));
+                Object.keys(chapterSnapshots).forEach(k => {
+                    if (chapterSnapshots[k] && chapterSnapshots[k].length > 2) {
+                        chapterSnapshots[k] = chapterSnapshots[k].slice(0, 2);
+                    }
+                });
+                localStorage.setItem('chapterSnapshots', JSON.stringify(chapterSnapshots));
+            } catch (trimError) {
+                console.warn('Emergency storage trim failed', trimError);
+            }
             try {
                 localStorage.setItem(key, value);
+                return true;
             } catch (e2) {
                 showStorageWarning();
+                return false;
             }
         }
 
@@ -1547,16 +1580,23 @@
 
         function checkStorageHealth() {
             const usage = getStorageUsage();
-            const limit = 4.5 * 1024 * 1024;
+            const limit = 2.5 * 1024 * 1024;
             if (usage > limit) {
                 showStorageWarning();
             } else {
                 hideStorageWarning();
             }
+            const label = document.getElementById('storageUsageLabel');
+            if (label) {
+                const mb = (usage * 2) / (1024 * 1024);
+                label.textContent = 'Browser storage: ~' + mb.toFixed(1) + ' MB used (estimate)';
+            }
         }
 
         function saveBooks() {
-            safePut('novelBooks', JSON.stringify(books));
+            const ok = safePut('novelBooks', JSON.stringify(books));
+            checkStorageHealth();
+            return ok;
         }
 
         function saveChapters() {
@@ -1564,7 +1604,9 @@
             if (book) {
                 book.chapters = chapters;
             }
-            saveBooks();
+            const ok = saveBooks();
+            scheduleDiskBackup();
+            return ok;
         }
 
         function saveSettings() {
@@ -1696,20 +1738,26 @@
             renderBookBar();
         }
 
-        function buildWorkspacePayload() {
-            return {
+        // includeSnapshots: true for disk exports (no size limit there);
+        // false for in-storage backups, where embedding every snapshot of every
+        // chapter multiplied the manuscript's localStorage footprint ~6x per backup.
+        function buildWorkspacePayload(includeSnapshots = true) {
+            const payload = {
                 version: 2,
                 exportedAt: new Date().toISOString(),
                 books,
                 currentBookId,
                 sceneTrackerData,
                 characterHeatmapData,
-                chapterSnapshots,
                 appSettings,
                 directionNotes,
                 bookNotes,
                 characterRoster
             };
+            if (includeSnapshots) {
+                payload.chapterSnapshots = chapterSnapshots;
+            }
+            return payload;
         }
 
         function createWorkspaceBackup(reason = 'manual') {
@@ -1720,13 +1768,14 @@
                     if (elapsed < 300000) return;
                 }
             }
-            const payload = buildWorkspacePayload();
+            const payload = buildWorkspacePayload(false);
             payload.reason = reason;
             workspaceBackups.unshift(payload);
             workspaceBackups = workspaceBackups.slice(0, BACKUP_LIMIT);
             safePut('workspaceBackups', JSON.stringify(workspaceBackups));
             updateBackupStatus();
             checkStorageHealth();
+            scheduleDiskBackup();
         }
 
         function updateBackupStatus() {
@@ -1753,6 +1802,20 @@
             });
             chapterSnapshots[key] = chapterSnapshots[key].slice(0, SNAPSHOT_LIMIT);
             safePut('chapterSnapshots', JSON.stringify(chapterSnapshots));
+        }
+
+        // Autosave fires every 60s; snapshotting on every tick meant the entire
+        // snapshot history could span just a few minutes of work. Space autosave
+        // snapshots out so the history covers a meaningful window. Manual saves
+        // still snapshot unconditionally via createChapterSnapshot.
+        function maybeSnapshotOnAutosave(chapter) {
+            if (!chapter || !chapter.id) return;
+            const list = chapterSnapshots[chapter.id] || [];
+            if (list.length > 0) {
+                const age = Date.now() - new Date(list[0].timestamp).getTime();
+                if (age < AUTOSAVE_SNAPSHOT_INTERVAL) return;
+            }
+            createChapterSnapshot(chapter);
         }
 
         function buildChapterKey(bookId, chapterIdOrIndex) {
@@ -2342,13 +2405,18 @@
             if (book) {
                 book.updatedAt = new Date().toISOString();
             }
-            saveChapters();
+            const persisted = saveChapters();
             createChapterSnapshot(chapter);
             createWorkspaceBackup('autosave');
+            writeDiskBackup(true);
             loadChapters();
             document.getElementById('chapterSelect').value = currentChapter;
             
-            alert('Chapter saved successfully!');
+            if (persisted) {
+                alert('Chapter saved successfully!');
+            } else {
+                alert('WARNING: Browser storage is full — this chapter could NOT be saved to browser storage.\n\nYour work is still open in the editor. Export your workspace to a file NOW (Backup & Restore panel), then clear old backups.');
+            }
         }
 
         // Export current chapter
@@ -2490,7 +2558,12 @@
                 normalizeBooks();
                 sceneTrackerData = { ...incomingScene };
                 characterHeatmapData = { ...incomingCharacter };
-                chapterSnapshots = { ...incomingSnapshots };
+                // In-storage backups no longer embed snapshots; restoring one of
+                // those must not wipe the live snapshot history. Only replace
+                // snapshots when the payload actually carries them (disk exports do).
+                if (payload.chapterSnapshots) {
+                    chapterSnapshots = { ...incomingSnapshots };
+                }
                 appSettings = { ...incomingSettings };
                 directionNotes = Array.isArray(incomingNotes) ? incomingNotes : [];
                 bookNotes = { ...incomingBookNotes };
@@ -2634,6 +2707,161 @@
             const last = workspaceBackups[0];
             importWorkspacePayload(last, 'replace');
         }
+
+        // ── Disk backup (File System Access API) ─────────────────────────────
+        // Keeps a full workspace copy (including snapshots) in a real file on
+        // disk, outside the localStorage quota. The file handle is persisted in
+        // a tiny IndexedDB store (handles are not serializable to localStorage).
+        // localStorage remains the working store; this is the safety net.
+        function diskBackupSupported() {
+            return typeof window.showSaveFilePicker === 'function' && typeof indexedDB !== 'undefined';
+        }
+
+        function idbOpen() {
+            return new Promise(function(resolve, reject) {
+                const req = indexedDB.open('novelAssistantFS', 1);
+                req.onupgradeneeded = function() { req.result.createObjectStore('handles'); };
+                req.onsuccess = function() { resolve(req.result); };
+                req.onerror = function() { reject(req.error); };
+            });
+        }
+
+        async function idbSet(key, value) {
+            const db = await idbOpen();
+            return new Promise(function(resolve, reject) {
+                const tx = db.transaction('handles', 'readwrite');
+                tx.objectStore('handles').put(value, key);
+                tx.oncomplete = function() { resolve(); };
+                tx.onerror = function() { reject(tx.error); };
+            });
+        }
+
+        async function idbGet(key) {
+            const db = await idbOpen();
+            return new Promise(function(resolve, reject) {
+                const tx = db.transaction('handles', 'readonly');
+                const req = tx.objectStore('handles').get(key);
+                req.onsuccess = function() { resolve(req.result); };
+                req.onerror = function() { reject(req.error); };
+            });
+        }
+
+        async function linkBackupFile() {
+            if (!diskBackupSupported()) {
+                alert('This browser does not support direct disk backups. Use Export Workspace regularly instead.');
+                return;
+            }
+            try {
+                const handle = await window.showSaveFilePicker({
+                    suggestedName: 'novel-workspace-backup.json',
+                    types: [{ description: 'JSON backup', accept: { 'application/json': ['.json'] } }]
+                });
+                diskBackupHandle = handle;
+                await idbSet('workspaceBackupFile', handle);
+                diskBackupState = 'active';
+                await writeDiskBackup(true);
+            } catch (e) {
+                if (e && e.name === 'AbortError') return; // user cancelled the picker
+                console.warn('Linking backup file failed', e);
+                diskBackupState = 'error';
+                renderDiskBackupStatus();
+            }
+        }
+
+        async function writeDiskBackup(force) {
+            if (!diskBackupHandle) return;
+            if (!force && Date.now() - lastDiskBackupAt < DISK_BACKUP_MIN_INTERVAL) return;
+            try {
+                if (diskBackupHandle.queryPermission) {
+                    const perm = await diskBackupHandle.queryPermission({ mode: 'readwrite' });
+                    if (perm !== 'granted') {
+                        diskBackupState = 'needs-permission';
+                        renderDiskBackupStatus();
+                        return;
+                    }
+                }
+                const writable = await diskBackupHandle.createWritable();
+                await writable.write(JSON.stringify(buildWorkspacePayload(true)));
+                await writable.close();
+                lastDiskBackupAt = Date.now();
+                diskBackupState = 'active';
+                renderDiskBackupStatus();
+            } catch (e) {
+                console.warn('Disk backup write failed', e);
+                diskBackupState = 'error';
+                renderDiskBackupStatus();
+            }
+        }
+
+        // Fire-and-forget, throttled. Safe to call from any save path.
+        function scheduleDiskBackup() {
+            if (diskBackupHandle && diskBackupState !== 'needs-permission') {
+                writeDiskBackup(false);
+            }
+        }
+
+        async function reauthorizeDiskBackup() {
+            if (!diskBackupHandle || !diskBackupHandle.requestPermission) return;
+            try {
+                const perm = await diskBackupHandle.requestPermission({ mode: 'readwrite' });
+                if (perm === 'granted') {
+                    diskBackupState = 'active';
+                    await writeDiskBackup(true);
+                    return;
+                }
+            } catch (e) {
+                console.warn('Disk backup permission request failed', e);
+            }
+            renderDiskBackupStatus();
+        }
+
+        async function initDiskBackup() {
+            if (!diskBackupSupported()) {
+                diskBackupState = 'unsupported';
+                renderDiskBackupStatus();
+                return;
+            }
+            try {
+                const handle = await idbGet('workspaceBackupFile');
+                if (!handle) {
+                    diskBackupState = 'unlinked';
+                    renderDiskBackupStatus();
+                    return;
+                }
+                diskBackupHandle = handle;
+                const perm = handle.queryPermission ? await handle.queryPermission({ mode: 'readwrite' }) : 'granted';
+                if (perm === 'granted') {
+                    diskBackupState = 'active';
+                    writeDiskBackup(true);
+                } else {
+                    // Browsers downgrade file permissions to 'prompt' after a
+                    // reload; re-granting requires a user gesture (the Re-enable button).
+                    diskBackupState = 'needs-permission';
+                }
+            } catch (e) {
+                console.warn('Disk backup init failed', e);
+                diskBackupState = 'error';
+            }
+            renderDiskBackupStatus();
+        }
+
+        function renderDiskBackupStatus() {
+            const el = document.getElementById('diskBackupStatus');
+            const reBtn = document.getElementById('diskBackupReauthBtn');
+            if (!el) return;
+            const messages = {
+                unsupported: 'Disk backup: not supported in this browser. Use Export Workspace regularly.',
+                unlinked: 'Disk backup: OFF. Click "Link Backup File" to keep an automatic copy on disk.',
+                'needs-permission': 'Disk backup: PAUSED — click Re-enable to grant file access.',
+                active: 'Disk backup: ON' + (lastDiskBackupAt ? ' — last written ' + new Date(lastDiskBackupAt).toLocaleTimeString() : ''),
+                error: 'Disk backup: WRITE FAILED — re-link the backup file or use Export Workspace.'
+            };
+            el.textContent = messages[diskBackupState] || '';
+            el.style.color = diskBackupState === 'active' ? '#48bb78'
+                : (diskBackupState === 'error' || diskBackupState === 'needs-permission' ? '#e53e3e' : '');
+            if (reBtn) reBtn.style.display = diskBackupState === 'needs-permission' ? 'inline-flex' : 'none';
+        }
+        // ─────────────────────────────────────────────────────────────────────
 
         // Analyze chapter function
         function analyzeChapter() {
@@ -3373,9 +3601,8 @@
             const sceneBeats = (sceneTrackerData[key] || []).slice(-3);
             const characterBeats = (characterHeatmapData[key] || []).slice(-3);
 
-            // First ~800 words of the chapter
-            const words = getEditorText().trim().split(/\s+/).filter(Boolean);
-            const contentSnippet = words.slice(0, 800).join(' ');
+            // Full chapter content
+            const contentSnippet = getEditorText().trim();
 
             let beatsContext = '';
             if (sceneBeats.length > 0) {
@@ -3421,8 +3648,8 @@
                     'anthropic-dangerous-direct-browser-access': 'true'
                 },
                 body: JSON.stringify({
-                    model: 'claude-sonnet-4-20250514',
-                    max_tokens: 1000,
+                    model: 'claude-sonnet-4-6',
+                    max_tokens: 4000,
                     system: buildSystemPrompt(),
                     messages: [{ role: 'user', content: userMessage }]
                 })
@@ -3996,19 +4223,29 @@
             const html = getEditorHTML();
             const text = getEditorText().trim();
             if (!text || html === lastAutosaveContent) return;
-            lastAutosaveContent = html;
             if (currentChapter !== null && chapters[currentChapter]) {
                 chapters[currentChapter].content = html;
                 chapters[currentChapter].wordCount = text.split(/\s+/).length;
                 chapters[currentChapter].updatedAt = new Date().toISOString();
                 const book = getCurrentBook();
                 if (book) book.updatedAt = new Date().toISOString();
-                saveChapters();
-                createChapterSnapshot(chapters[currentChapter]);
+                const persisted = saveChapters();
+                if (persisted) {
+                    // Only mark this content as saved when the write actually
+                    // succeeded, so a failed autosave retries on the next tick.
+                    lastAutosaveContent = html;
+                    maybeSnapshotOnAutosave(chapters[currentChapter]);
+                }
                 const indicator = document.getElementById('autosaveIndicator');
                 if (indicator) {
-                    indicator.textContent = 'Autosaved at ' + new Date().toLocaleTimeString();
-                    setTimeout(() => { indicator.textContent = ''; }, 5000);
+                    if (persisted) {
+                        indicator.style.color = '';
+                        indicator.textContent = 'Autosaved at ' + new Date().toLocaleTimeString();
+                        setTimeout(() => { indicator.textContent = ''; }, 5000);
+                    } else {
+                        indicator.style.color = '#e53e3e';
+                        indicator.textContent = 'AUTOSAVE FAILED — browser storage is full. Export your workspace now.';
+                    }
                 }
                 loadChapters();
                 document.getElementById('chapterSelect').value = currentChapter;
@@ -4209,7 +4446,8 @@
             const editor = document.getElementById('bookNotesEditor');
             if (!editor) return;
             bookNotes[currentBookId] = editor.value;
-            localStorage.setItem('bookNotes', JSON.stringify(bookNotes));
+            safePut('bookNotes', JSON.stringify(bookNotes));
+            scheduleDiskBackup();
         }
 
         function loadBookNotes() {
@@ -4276,6 +4514,7 @@
             applyViewSettings();
             renderBookBar();
             checkStorageHealth();
+            initDiskBackup();
             directionNotes = directionNotes.map(note => note.bookId ? note : { ...note, bookId: currentBookId });
             localStorage.setItem('directionNotes', JSON.stringify(directionNotes));
             renderDirectionNotes();
